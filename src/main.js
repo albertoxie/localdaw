@@ -1790,8 +1790,15 @@ export async function initStandaloneDaw() {
         if (!rulerEl || rulerEl._scrubBound) return;
         rulerEl._scrubBound = true;
 
+        rulerEl.addEventListener('selectstart', (e) => e.preventDefault());
+
         rulerEl.addEventListener('mousedown', (e) => {
             if (e.button !== 0) return;
+            e.preventDefault();
+            window.getSelection()?.removeAllRanges();
+            document.body.style.userSelect = 'none';
+            document.body.style.webkitUserSelect = 'none';
+
             isRulerScrubbing = true;
             wasPlayingBeforeRulerScrub = daw.isPlaying;
             if (daw.isPlaying) stopDawPlayback(false);
@@ -1800,6 +1807,8 @@ export async function initStandaloneDaw() {
 
             const onMouseMove = (moveEv) => {
                 if (!isRulerScrubbing) return;
+                moveEv.preventDefault();
+                window.getSelection()?.removeAllRanges();
                 seekTimelineFromClientX(moveEv.clientX, true);
 
                 const viewport = document.getElementById('timeline-scroll-viewport');
@@ -1816,6 +1825,8 @@ export async function initStandaloneDaw() {
             const onMouseUp = () => {
                 if (!isRulerScrubbing) return;
                 isRulerScrubbing = false;
+                document.body.style.userSelect = '';
+                document.body.style.webkitUserSelect = '';
                 window.removeEventListener('mousemove', onMouseMove);
                 window.removeEventListener('mouseup', onMouseUp);
                 if (wasPlayingBeforeRulerScrub) {
@@ -3948,11 +3959,14 @@ export async function initStandaloneDaw() {
             }
 
             // Interactive Drag and Drop Repositioning with Multi-Clip Selection, Shift-Lock Axis, Magnetic Snapping, & Auto-Scroll
+            clipEl.addEventListener('selectstart', (e) => e.preventDefault());
             clipEl.addEventListener('mousedown', (e) => {
                 if (e.button !== 0) return;
                 if (e.target.closest('input')) return;
                 if (e.target.closest('.daw-clip-trim-handle')) return;
                 if (e.target.closest('.daw-clip-fade-handle')) return;
+
+                window.getSelection()?.removeAllRanges();
 
                 // Razor Blade Tool Mode (B): Clicking anywhere on a clip splits it at that exact timestamp
                 if (daw.activeTool === 'blade') {
@@ -4076,6 +4090,11 @@ export async function initStandaloneDaw() {
 
                 const startX = e.clientX;
                 const startY = e.clientY;
+                e.preventDefault();
+                window.getSelection()?.removeAllRanges();
+                document.body.style.userSelect = 'none';
+                document.body.style.webkitUserSelect = 'none';
+
                 const leaderInitOffset = Number.isFinite(clip.startOffset) ? clip.startOffset : 0;
                 let hasDragged = false;
                 let candidateTrackId = clip.trackId;
@@ -4427,6 +4446,9 @@ export async function initStandaloneDaw() {
                     if (sourceLane) {
                         sourceLane.style.zIndex = '';
                     }
+
+                    document.body.style.userSelect = '';
+                    document.body.style.webkitUserSelect = '';
 
                     clipEl.style.cursor = 'grab';
                     clipEl.style.transform = 'none';
@@ -8315,6 +8337,7 @@ export async function initStandaloneDaw() {
         for (const clip of daw.clips) {
             const track = daw.tracks[clip.trackId];
             if (!track) continue;
+            if (clip.muted || clip.isMuted) continue;
 
             const clipStart = Number.isFinite(clip.startOffset) ? clip.startOffset : 0;
             const tStart = Number.isFinite(clip.trimStart) ? clip.trimStart : 0;
@@ -9380,6 +9403,7 @@ export async function initStandaloneDaw() {
             for (const clip of daw.clips) {
                 // If exporting a single selected track, skip clips belonging to any other track
                 if (activeTrack && clip.trackId !== activeTrack.id) continue;
+                if (clip.muted || clip.isMuted) continue;
 
                 const track = daw.tracks[clip.trackId];
                 if (!track) continue;
@@ -14326,6 +14350,8 @@ export async function initStandaloneDaw() {
         let startClientX = 0;
         let startClientY = 0;
 
+        lanesContainer.addEventListener('selectstart', (e) => e.preventDefault());
+
         lanesContainer.addEventListener('mousedown', (e) => {
             // Ignore right clicks or clicks on existing clips, keyframes, handles, buttons, or scrollbars
             if (e.button !== 0) return;
@@ -14338,6 +14364,11 @@ export async function initStandaloneDaw() {
                 return;
             }
 
+            e.preventDefault();
+            window.getSelection()?.removeAllRanges();
+            document.body.style.userSelect = 'none';
+            document.body.style.webkitUserSelect = 'none';
+
             const lanesRect = lanesContainer.getBoundingClientRect();
             startX = e.clientX - lanesRect.left;
             startY = e.clientY - lanesRect.top;
@@ -14347,6 +14378,8 @@ export async function initStandaloneDaw() {
             let hasMovedEnough = false;
 
             const onMouseMove = (moveEv) => {
+                moveEv.preventDefault();
+                window.getSelection()?.removeAllRanges();
                 const dist = Math.hypot(moveEv.clientX - startClientX, moveEv.clientY - startClientY);
                 if (!hasMovedEnough && dist < 5) return;
                 hasMovedEnough = true;
@@ -14411,6 +14444,8 @@ export async function initStandaloneDaw() {
             };
 
             const onMouseUp = (upEv) => {
+                document.body.style.userSelect = '';
+                document.body.style.webkitUserSelect = '';
                 window.removeEventListener('mousemove', onMouseMove);
                 window.removeEventListener('mouseup', onMouseUp);
 
@@ -16632,42 +16667,64 @@ export async function initStandaloneDaw() {
     // ─────────────────────────────────────────────────────────────
     // Track & Mixer Strip Right-Click Context Menu Engine
     // ─────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────
+    // Universal DAW Right-Click Context Menu Engine
+    // (Clips, Track Lanes, Ruler, Track Headers, Workspace)
+    // ─────────────────────────────────────────────────────────────
     const initTrackContextMenu = () => {
         const ctxMenu = document.getElementById('daw-track-context-menu');
+        if (!ctxMenu) return;
         const labelEl = document.getElementById('daw-ctx-track-label');
         const badgeEl = document.getElementById('daw-ctx-track-badge');
-        const exportTrackBtn = document.getElementById('daw-ctx-export-track');
-        const exportMixBtn = document.getElementById('daw-ctx-export-mix');
-        const exportStemsBtn = document.getElementById('daw-ctx-export-all-stems');
-        const propBtn = document.getElementById('daw-ctx-track-properties');
-        const addTrackBtn = document.getElementById('daw-ctx-add-track');
-        const deleteTrackBtn = document.getElementById('daw-ctx-delete-track');
-
-        let _ctxTrackId = null;
 
         const hideMenu = () => {
             if (ctxMenu) ctxMenu.style.display = 'none';
-            _ctxTrackId = null;
         };
 
-        const showMenu = (e, trackId) => {
-            if (!ctxMenu || !trackId || !daw.tracks[trackId]) return;
-            e.preventDefault();
-            e.stopPropagation();
+        const renderItems = (title, badge, items, e) => {
+            if (labelEl) labelEl.textContent = title;
+            if (badgeEl) badgeEl.textContent = badge;
 
-            _ctxTrackId = trackId;
-            daw._activeFxTrackId = trackId;
-            renderDawTracks();
-            syncActiveTrackToDeck();
-            if (typeof renderMixerStrips === 'function') renderMixerStrips();
+            // Remove previous items (keeping header row)
+            while (ctxMenu.children.length > 1) {
+                ctxMenu.removeChild(ctxMenu.lastChild);
+            }
 
-            const track = daw.tracks[trackId];
-            if (labelEl) labelEl.textContent = track.name || 'TRACK OPTIONS';
-            if (badgeEl) badgeEl.textContent = (track.channels || 'stereo').toUpperCase();
+            // Append new items
+            items.forEach(item => {
+                if (item.isDivider) {
+                    const div = document.createElement('div');
+                    div.style.cssText = 'height: 1px; background: rgba(255,255,255,0.08); margin: 4px 0;';
+                    ctxMenu.appendChild(div);
+                    return;
+                }
+                const itEl = document.createElement('div');
+                itEl.className = 'daw-menu-item';
+                itEl.style.cssText = `padding: 6px 12px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; color: ${item.isDanger ? '#ff453a' : '#ffffff'}; font-size: 11.5px; font-weight: 700; transition: background 0.12s; user-select: none;`;
+                itEl.innerHTML = `
+                    <span style="display: flex; align-items: center; gap: 7px;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">${item.iconSvg || ''}</svg>
+                        ${item.label}
+                    </span>
+                    ${item.shortcut ? `<span class="daw-menu-shortcut" style="color: ${item.isDanger ? 'rgba(255,69,58,0.7)' : 'rgba(255,255,255,0.45)'}; font-size: 9.5px;">${item.shortcut}</span>` : ''}
+                `;
+                itEl.addEventListener('mouseenter', () => {
+                    itEl.style.background = item.isDanger ? 'rgba(255, 69, 58, 0.18)' : 'rgba(10, 132, 255, 0.2)';
+                });
+                itEl.addEventListener('mouseleave', () => {
+                    itEl.style.background = 'transparent';
+                });
+                itEl.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    hideMenu();
+                    item.onClick?.();
+                });
+                ctxMenu.appendChild(itEl);
+            });
 
             ctxMenu.style.display = 'block';
-            const menuW = 210;
-            const menuH = ctxMenu.offsetHeight || 190;
+            const menuW = 220;
+            const menuH = ctxMenu.offsetHeight || 220;
             let left = e.clientX + 2;
             let top = e.clientY + 2;
 
@@ -16678,19 +16735,447 @@ export async function initStandaloneDaw() {
             ctxMenu.style.top = `${Math.max(10, top)}px`;
         };
 
-        // Delegate right click on track headers and mixer strips
         document.addEventListener('contextmenu', (e) => {
+            // Check if right click occurred within the DAW
+            const dawContainer = e.target.closest('#daw-root-container') || e.target.closest('#daw-app-shell') || e.target.closest('.daw-fullscreen-container') || e.target.closest('#daw-modal') || e.target.closest('body');
+            if (!dawContainer) return;
+
+            // Target 1: Timeline Clip
+            const clipEl = e.target.closest('.daw-timeline-clip');
+            if (clipEl) {
+                e.preventDefault();
+                e.stopPropagation();
+                const clipId = clipEl.getAttribute('data-clip-id');
+                const clip = daw.clips.find(c => c.id === clipId);
+                if (!clip) return;
+
+                if (!daw.selectedClipIds) daw.selectedClipIds = new Set();
+                if (!daw.selectedClipIds.has(clipId)) {
+                    daw.selectedClipIds.clear();
+                    daw.selectedClipIds.add(clipId);
+                    daw.selectedClipId = clipId;
+                    renderDawClips();
+                    if (typeof window._syncBottomDeckClipInspector === 'function') window._syncBottomDeckClipInspector();
+                }
+
+                const clipTitle = clip.name.length > 20 ? clip.name.slice(0, 19) + '…' : clip.name;
+                const items = [
+                    {
+                        label: 'Split at Playhead',
+                        shortcut: 'S',
+                        iconSvg: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/>',
+                        onClick: () => splitClipAtTimestamp(clip.id, daw.playhead)
+                    },
+                    {
+                        label: 'Duplicate Clip',
+                        shortcut: 'Ctrl+D',
+                        iconSvg: '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+                        onClick: () => duplicateSelectedClipDAW()
+                    },
+                    {
+                        label: clip.muted ? 'Unmute Clip' : 'Mute Clip',
+                        shortcut: 'M',
+                        iconSvg: clip.muted 
+                            ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>' 
+                            : '<path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>',
+                        onClick: () => {
+                            clip.muted = !clip.muted;
+                            renderDawClips();
+                            showStudioToast(clip.muted ? `Muted "${clip.name}"` : `Unmuted "${clip.name}"`);
+                        }
+                    },
+                    {
+                        label: 'Normalize (0 dBFS)',
+                        iconSvg: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+                        onClick: () => normalizeSelectedClip()
+                    },
+                    {
+                        label: 'Reverse Audio',
+                        iconSvg: '<polygon points="11 19 2 12 11 5 11 19"/><polygon points="22 19 13 12 22 5 22 19"/>',
+                        onClick: () => reverseSelectedClip()
+                    },
+                    {
+                        label: 'Copy Clip',
+                        shortcut: 'Ctrl+C',
+                        iconSvg: '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+                        onClick: () => copySelectedClipsDAW()
+                    },
+                    {
+                        label: 'Export Clip (WAV)',
+                        iconSvg: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+                        onClick: () => {
+                            if (clip.buffer && typeof audioBufferToWav === 'function') {
+                                const wavBlob = audioBufferToWav(clip.buffer);
+                                const url = URL.createObjectURL(wavBlob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `${clip.name.replace(/\.[^/.]+$/, "")}.wav`;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                                showStudioToast(`Exported "${clip.name}" as WAV`);
+                            } else {
+                                showStudioToast('Audio buffer not loaded for clip');
+                            }
+                        }
+                    },
+                    { isDivider: true },
+                    {
+                        label: 'Delete Clip',
+                        shortcut: 'Del',
+                        isDanger: true,
+                        iconSvg: '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+                        onClick: () => deleteSelectedClip()
+                    }
+                ];
+                renderItems(clipTitle, (clip.tag || 'AUDIO').toUpperCase(), items, e);
+                return;
+            }
+
+            // Target 2: Track Header or Mixer Strip
             const trackHeader = e.target.closest('.daw-track-header');
             const mixerStrip = e.target.closest('.daw-mixer-strip');
-            const targetEl = trackHeader || mixerStrip;
+            const trHeaderEl = trackHeader || mixerStrip;
+            if (trHeaderEl) {
+                e.preventDefault();
+                e.stopPropagation();
+                const trId = trHeaderEl.getAttribute('data-track-id');
+                const track = daw.tracks[trId];
+                if (!track) return;
 
-            if (targetEl) {
-                const trId = targetEl.getAttribute('data-track-id');
-                if (trId) {
-                    showMenu(e, trId);
-                    return;
-                }
+                daw._activeFxTrackId = trId;
+                renderDawTracks();
+                syncActiveTrackToDeck();
+                if (typeof renderMixerStrips === 'function') renderMixerStrips();
+
+                const items = [
+                    {
+                        label: 'Export Track (WAV)...',
+                        shortcut: 'Bounce',
+                        iconSvg: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+                        onClick: () => {
+                            daw._activeFxTrackId = trId;
+                            openExportMixdownModal('selected');
+                        }
+                    },
+                    {
+                        label: 'Export Master Mix...',
+                        shortcut: 'Ctrl+M',
+                        iconSvg: '<polyline points="20 6 9 17 4 12"/>',
+                        onClick: () => openExportMixdownModal('master')
+                    },
+                    {
+                        label: 'Export All Stems (.ZIP)...',
+                        shortcut: 'Ctrl+Shift+E',
+                        iconSvg: '<polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/>',
+                        onClick: () => exportAllStemsZipDAW()
+                    },
+                    { isDivider: true },
+                    {
+                        label: 'Track Properties & Color...',
+                        iconSvg: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+                        onClick: () => {
+                            if (typeof openTrackPropertiesModal === 'function') openTrackPropertiesModal(trId);
+                        }
+                    },
+                    {
+                        label: '+ Add Empty Track',
+                        shortcut: 'Ctrl+T',
+                        iconSvg: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+                        onClick: () => addNewEmptyTrack('audio')
+                    },
+                    { isDivider: true },
+                    {
+                        label: 'Delete Track',
+                        shortcut: 'Alt+Del',
+                        isDanger: true,
+                        iconSvg: '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+                        onClick: () => {
+                            if (typeof deleteTrackPrompt === 'function') deleteTrackPrompt(trId);
+                        }
+                    }
+                ];
+                renderItems(track.name || 'TRACK OPTIONS', (track.channels || 'stereo').toUpperCase(), items, e);
+                return;
             }
+
+            // Target 3: Timeline Track Lane (Empty Lane Area)
+            const laneEl = e.target.closest('.timeline-lane');
+            if (laneEl) {
+                e.preventDefault();
+                e.stopPropagation();
+                const trId = laneEl.getAttribute('data-track-id');
+                const track = daw.tracks[trId];
+                if (!track) return;
+
+                daw._activeFxTrackId = trId;
+                renderDawTracks();
+                syncActiveTrackToDeck();
+
+                const isArmed = (daw._recordTrackId === trId);
+                const items = [
+                    {
+                        label: 'Paste at Playhead',
+                        shortcut: 'Ctrl+V',
+                        iconSvg: '<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>',
+                        onClick: () => {
+                            daw._recordTrackId = trId;
+                            pasteClipsDAW();
+                        }
+                    },
+                    {
+                        label: isArmed ? 'Disarm Recording' : 'Arm Track for Recording',
+                        shortcut: 'R',
+                        iconSvg: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3" fill="currentColor"/>',
+                        onClick: () => {
+                            daw._recordTrackId = (isArmed ? null : trId);
+                            renderDawTracks();
+                            showStudioToast(daw._recordTrackId === trId ? `Track "${track.name}" Armed` : `Track "${track.name}" Disarmed`);
+                        }
+                    },
+                    {
+                        label: track.solo ? 'Unsolo Track' : 'Solo Track',
+                        shortcut: 'S',
+                        iconSvg: '<path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>',
+                        onClick: () => {
+                            track.solo = !track.solo;
+                            renderDawTracks();
+                            renderDawClips();
+                            if (typeof renderMixerStrips === 'function') renderMixerStrips();
+                            showStudioToast(`Track "${track.name}" ${track.solo ? 'Soloed' : 'Unsoloed'}`);
+                        }
+                    },
+                    {
+                        label: track.muted ? 'Unmute Track' : 'Mute Track',
+                        shortcut: 'M',
+                        iconSvg: track.muted 
+                            ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>' 
+                            : '<path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>',
+                        onClick: () => {
+                            track.muted = !track.muted;
+                            renderDawTracks();
+                            renderDawClips();
+                            if (typeof renderMixerStrips === 'function') renderMixerStrips();
+                            showStudioToast(`Track "${track.name}" ${track.muted ? 'Muted' : 'Unmuted'}`);
+                        }
+                    },
+                    {
+                        label: 'Import Audio to Track...',
+                        iconSvg: '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+                        onClick: () => {
+                            daw._targetImportTrackId = trId;
+                            document.getElementById('daw-asset-import-input')?.click();
+                        }
+                    },
+                    {
+                        label: 'Track Properties & Color...',
+                        iconSvg: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+                        onClick: () => {
+                            if (typeof openTrackPropertiesModal === 'function') openTrackPropertiesModal(trId);
+                        }
+                    },
+                    {
+                        label: '+ Add Empty Track',
+                        shortcut: 'Ctrl+T',
+                        iconSvg: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+                        onClick: () => addNewEmptyTrack('audio')
+                    },
+                    { isDivider: true },
+                    {
+                        label: 'Delete Track',
+                        shortcut: 'Alt+Del',
+                        isDanger: true,
+                        iconSvg: '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+                        onClick: () => {
+                            if (typeof deleteTrackPrompt === 'function') deleteTrackPrompt(trId);
+                        }
+                    }
+                ];
+                renderItems(track.name || 'TRACK LANE', (track.channels || 'stereo').toUpperCase(), items, e);
+                return;
+            }
+
+            // Target 4: Timeline Ruler Header
+            const rulerEl = e.target.closest('#timeline-ruler');
+            if (rulerEl) {
+                e.preventDefault();
+                e.stopPropagation();
+                const rulerRect = rulerEl.getBoundingClientRect();
+                const vp = document.getElementById('timeline-scroll-viewport');
+                const scrollL = vp ? vp.scrollLeft : 0;
+                const clickX = e.clientX - rulerRect.left + scrollL;
+                const clickSec = Math.max(0, Math.round((clickX / daw.zoom) * 100) / 100);
+
+                const items = [
+                    {
+                        label: `Set Playhead (${formatDawSMPTE(clickSec, 24)})`,
+                        iconSvg: '<polygon points="5 3 19 12 5 21 5 3"/>',
+                        onClick: () => {
+                            daw.playhead = clickSec;
+                            updateDawPlayhead();
+                            playDawScrubGrain(clickSec);
+                        }
+                    },
+                    {
+                        label: 'Add Scene Marker Here',
+                        shortcut: 'M',
+                        iconSvg: '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',
+                        onClick: () => {
+                            if (!Array.isArray(daw.markers)) daw.markers = [];
+                            daw.markers.push({ time: clickSec, name: `Cue ${daw.markers.length + 1}`, color: '#ff9f0a' });
+                            pushDawHistory('Add Scene Marker');
+                            renderDawRuler();
+                            showStudioToast(`Added Cue Marker at ${formatDawSMPTE(clickSec, 24)}`);
+                        }
+                    },
+                    {
+                        label: 'Set In-Point (Punch In)',
+                        shortcut: 'I',
+                        iconSvg: '<path d="M4 4h4v16H4z"/>',
+                        onClick: () => {
+                            if (!daw.punch) daw.punch = { isActive: false, inTime: 0, outTime: 10 };
+                            daw.punch.inTime = clickSec;
+                            if (daw.punch.outTime <= daw.punch.inTime) daw.punch.outTime = daw.punch.inTime + 4;
+                            daw.punch.isActive = true;
+                            updateDawPunchOverlay();
+                            showStudioToast(`Punch-In set to ${formatDawSMPTE(clickSec, 24)}`);
+                        }
+                    },
+                    {
+                        label: 'Set Out-Point (Punch Out)',
+                        shortcut: 'O',
+                        iconSvg: '<path d="M16 4h4v16h-4z"/>',
+                        onClick: () => {
+                            if (!daw.punch) daw.punch = { isActive: false, inTime: 0, outTime: 10 };
+                            daw.punch.outTime = clickSec;
+                            if (daw.punch.outTime <= daw.punch.inTime) daw.punch.inTime = Math.max(0, daw.punch.outTime - 4);
+                            daw.punch.isActive = true;
+                            updateDawPunchOverlay();
+                            showStudioToast(`Punch-Out set to ${formatDawSMPTE(clickSec, 24)}`);
+                        }
+                    },
+                    {
+                        label: 'Clear Loop / Punch Region',
+                        iconSvg: '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>',
+                        onClick: () => {
+                            if (daw.punch) daw.punch.isActive = false;
+                            updateDawPunchOverlay();
+                            showStudioToast('Loop / Punch Region cleared');
+                        }
+                    },
+                    { isDivider: true },
+                    {
+                        label: 'Split All Tracks at Playhead',
+                        shortcut: 'Ctrl+B',
+                        iconSvg: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/>',
+                        onClick: () => {
+                            let splitCount = 0;
+                            [...daw.clips].forEach(c => {
+                                const start = c.startOffset;
+                                const end = start + ((c.trimEnd || c.duration) - (c.trimStart || 0));
+                                if (daw.playhead > start + 0.05 && daw.playhead < end - 0.05) {
+                                    if (splitClipAtTimestamp(c.id, daw.playhead)) splitCount++;
+                                }
+                            });
+                            showStudioToast(splitCount > 0 ? `Split ${splitCount} clips across tracks` : 'No clips crossing playhead to split');
+                        }
+                    },
+                    {
+                        label: 'Zoom to Fit Timeline',
+                        shortcut: 'Shift+Z',
+                        iconSvg: '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>',
+                        onClick: () => {
+                            const vpEl = document.getElementById('timeline-scroll-viewport');
+                            if (vpEl && daw.duration > 0) {
+                                const availW = vpEl.clientWidth - 40;
+                                const newZ = Math.max(10, Math.min(250, availW / daw.duration));
+                                daw.zoom = Math.round(newZ);
+                                renderDawRuler();
+                                renderDawClips();
+                                updateDawPlayhead();
+                                showStudioToast(`Zoomed to fit (${daw.zoom} px/s)`);
+                            }
+                        }
+                    }
+                ];
+                renderItems('RULER & TRANSPORT', formatDawSMPTE(clickSec, 24), items, e);
+                return;
+            }
+
+            // Target 5: Workspace Background / Timeline Viewport
+            const viewport = e.target.closest('#timeline-scroll-viewport') || e.target.closest('#timeline-lanes-container') || e.target.closest('#daw-canvas-container');
+            if (viewport) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const items = [
+                    {
+                        label: '+ Add Empty Track',
+                        shortcut: 'Ctrl+T',
+                        iconSvg: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+                        onClick: () => addNewEmptyTrack('audio')
+                    },
+                    {
+                        label: daw.isPlaying ? 'Pause Transport' : 'Play Transport',
+                        shortcut: 'Space',
+                        iconSvg: daw.isPlaying ? '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>' : '<polygon points="5 3 19 12 5 21 5 3"/>',
+                        onClick: () => {
+                            if (daw.isPlaying) stopDawPlayback();
+                            else startDawPlayback();
+                        }
+                    },
+                    {
+                        label: 'Rewind to Beginning',
+                        shortcut: 'Home',
+                        iconSvg: '<polygon points="11 19 2 12 11 5 11 19"/><polygon points="22 19 13 12 22 5 22 19"/>',
+                        onClick: () => {
+                            daw.playhead = 0;
+                            updateDawPlayhead();
+                            showStudioToast('Rewound to 00:00:00:00');
+                        }
+                    },
+                    {
+                        label: 'Select All Clips',
+                        shortcut: 'Ctrl+A',
+                        iconSvg: '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>',
+                        onClick: () => {
+                            if (!daw.selectedClipIds) daw.selectedClipIds = new Set();
+                            daw.clips.forEach(c => daw.selectedClipIds.add(c.id));
+                            daw.selectedClipId = daw.clips[0]?.id || null;
+                            renderDawClips();
+                            showStudioToast(`Selected all ${daw.clips.length} clip(s)`);
+                        }
+                    },
+                    {
+                        label: 'Deselect All',
+                        shortcut: 'Esc',
+                        iconSvg: '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>',
+                        onClick: () => {
+                            if (daw.selectedClipIds) daw.selectedClipIds.clear();
+                            daw.selectedClipId = null;
+                            renderDawClips();
+                            if (typeof window._syncBottomDeckClipInspector === 'function') window._syncBottomDeckClipInspector();
+                        }
+                    },
+                    { isDivider: true },
+                    {
+                        label: 'Export Master Mix...',
+                        shortcut: 'Ctrl+M',
+                        iconSvg: '<polyline points="20 6 9 17 4 12"/>',
+                        onClick: () => openExportMixdownModal('master')
+                    },
+                    {
+                        label: 'Export All Stems (.ZIP)...',
+                        shortcut: 'Ctrl+Shift+E',
+                        iconSvg: '<polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/>',
+                        onClick: () => exportAllStemsZipDAW()
+                    }
+                ];
+                renderItems('STUDIO WORKSPACE', 'LOCALDAW', items, e);
+                return;
+            }
+
             hideMenu();
         });
 
@@ -16703,46 +17188,6 @@ export async function initStandaloneDaw() {
 
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') hideMenu();
-        });
-
-        exportTrackBtn?.addEventListener('click', () => {
-            const trId = _ctxTrackId;
-            hideMenu();
-            if (trId && daw.tracks[trId]) {
-                daw._activeFxTrackId = trId;
-                openExportMixdownModal('selected');
-            }
-        });
-
-        exportMixBtn?.addEventListener('click', () => {
-            hideMenu();
-            openExportMixdownModal('master');
-        });
-
-        exportStemsBtn?.addEventListener('click', () => {
-            hideMenu();
-            exportAllStemsZipDAW();
-        });
-
-        propBtn?.addEventListener('click', () => {
-            const trId = _ctxTrackId;
-            hideMenu();
-            if (trId && typeof openTrackPropertiesModal === 'function') {
-                openTrackPropertiesModal(trId);
-            }
-        });
-
-        addTrackBtn?.addEventListener('click', () => {
-            hideMenu();
-            addNewEmptyTrack('audio');
-        });
-
-        deleteTrackBtn?.addEventListener('click', () => {
-            const trId = _ctxTrackId;
-            hideMenu();
-            if (trId && typeof deleteTrackPrompt === 'function') {
-                deleteTrackPrompt(trId);
-            }
         });
     };
 

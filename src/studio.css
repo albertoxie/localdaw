@@ -717,3 +717,119 @@ html, body {
   display: none !important;
 }
 
+/* Prevent accidental text and element selection across the entire timeline workspace */
+#timeline-scroll-viewport,
+#timeline-ruler,
+#timeline-lanes-container,
+.timeline-lane,
+.daw-timeline-clip,
+.timeline-playhead,
+#daw-playhead-handle,
+.daw-scene-marker,
+.daw-track-header,
+#daw-track-headers-container,
+#daw-punch-region-overlay,
+.daw-kf-group,
+.daw-track-sidebar,
+.daw-footer-transport {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+/* Universal Context Menu Styles */
+.daw-context-menu-container {
+  display: none;
+  position: fixed;
+  z-index: 100000;
+  background: #090d16;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.95), 0 0 20px rgba(10, 132, 255, 0.18);
+  min-width: 220px;
+  max-width: 280px;
+  padding: 6px 0;
+  user-select: none;
+  -webkit-user-select: none;
+  backdrop-filter: blur(20px);
+}
+
+.daw-ctx-header {
+  padding: 6px 14px 6px 14px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #0a84ff;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  letter-spacing: 0.6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.daw-ctx-header-badge {
+  font-size: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(10, 132, 255, 0.15);
+  color: #0a84ff;
+  border: 1px solid rgba(10, 132, 255, 0.3);
+}
+
+.daw-ctx-item {
+  padding: 7px 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #e2e8f0;
+  font-size: 11.5px;
+  font-weight: 600;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+
+.daw-ctx-item:hover {
+  background: rgba(10, 132, 255, 0.2);
+  color: #ffffff;
+}
+
+.daw-ctx-item.is-danger {
+  color: #ff453a;
+}
+
+.daw-ctx-item.is-danger:hover {
+  background: rgba(255, 69, 58, 0.18);
+  color: #ff6961;
+}
+
+.daw-ctx-item-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.daw-ctx-item-left svg {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.daw-ctx-item:hover .daw-ctx-item-left svg {
+  opacity: 1;
+}
+
+.daw-ctx-shortcut {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 9.5px;
+  font-family: 'JetBrains Mono', Menlo, monospace;
+}
+
+.daw-ctx-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 4px 0;
+}
+
+
