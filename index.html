@@ -3,11 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LocalDAW Pro | Film Audio & Multi-Track Studio Workstation | Alan Joyce (Wicklow Hub) | LocalFilm Ireland</title>
+    <title>LocalDAW Pro Studio | Multi-Track Audio Workstation | Alan Joyce (Wicklow Hub) | LocalFilm Ireland</title>
     <meta name="description" content="LocalDAW Pro Studio Workstation — Sovereign browser-based multi-track digital audio workstation for film sound designers, podcasters, and independent filmmakers. Powered by LocalFilm Ireland & Alan Joyce.">
+    <meta name="author" content="Alan Joyce (Wicklow Hub) | LocalFilm Ireland">
+    <meta name="theme-color" content="#000000">
+
+    <!-- Open Graph / Facebook / LinkedIn / Discord Link Previews -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="LocalFilm Ireland">
+    <meta property="og:title" content="LocalDAW Pro Studio | Multi-Track Audio Workstation | Alan Joyce (Wicklow Hub) | LocalFilm Ireland">
+    <meta property="og:description" content="Sovereign browser-based multi-track DAW with real-time 64-bit Web Audio DSP, broadcast VU metering, and zero-latency studio recording.">
+    <meta property="og:url" content="https://localdaw.com/">
+    <meta property="og:image" content="https://localdaw.com/localdaw-emblem.png">
+    <meta property="og:image:width" content="840">
+    <meta property="og:image:height" content="601">
+    <meta property="og:image:alt" content="LocalDAW Pro Studio Titanium Emblem Logo - LocalFilm Ireland">
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="LocalDAW Pro Studio | Multi-Track Audio Workstation | Alan Joyce (Wicklow Hub)">
+    <meta name="twitter:description" content="Sovereign browser-based multi-track DAW with real-time 64-bit Web Audio DSP, broadcast VU metering, and zero-latency studio recording.">
+    <meta name="twitter:image" content="https://localdaw.com/localdaw-emblem.png">
+
     <link rel="icon" type="image/png" href="/logo.png">
     <link rel="manifest" href="/manifest.json">
-    <link rel="preload" as="image" href="/localdaw-emblem.png?v=1.8.38" type="image/png" fetchpriority="high">
+    <link rel="preload" as="image" href="/localdaw-emblem.png?v=1.8.39" type="image/png" fetchpriority="high">
     <link rel="stylesheet" href="/src/studio.css">
 </head>
 <body>
@@ -17,44 +37,53 @@
             
             <!-- Sovereign Floating Titanium Hardware Emblem (Borderless & Box-Free) -->
             <div style="position: relative; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; min-height: 220px;">
-                <img id="daw-splash-emblem-img" src="/localdaw-emblem.png?v=1.8.38" alt="LocalDAW Pro Logo" width="340" height="243" loading="eager" fetchpriority="high" decoding="sync" onerror="this.onerror=null; this.src='/localdaw-splash.jpg';" style="position: relative; width: 340px; max-width: 72vw; height: auto; aspect-ratio: 840/601; object-fit: contain; background: transparent; border: none; outline: none; box-shadow: none; filter: drop-shadow(0 20px 40px rgba(0,0,0,0.9)) drop-shadow(0 0 25px rgba(10, 132, 255, 0.22));">
+                <img id="daw-splash-emblem-img" src="/localdaw-emblem.png?v=1.8.39" alt="LocalDAW Pro Logo" width="340" height="243" loading="eager" fetchpriority="high" decoding="sync" onerror="this.onerror=null; this.src='/localdaw-splash.jpg';" style="position: relative; width: 340px; max-width: 72vw; height: auto; aspect-ratio: 840/601; object-fit: contain; background: transparent; border: none; outline: none; box-shadow: none; filter: drop-shadow(0 20px 40px rgba(0,0,0,0.9)) drop-shadow(0 0 25px rgba(255, 255, 255, 0.15));">
             </div>
 
             <!-- Title & Release Badge -->
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; justify-content: center;">
                 <span style="font-size: 13px; font-weight: 800; letter-spacing: 2.8px; color: #ffffff; text-transform: uppercase;">LOCALDAW PRO STUDIO</span>
-                <span style="font-size: 10px; font-family: 'JetBrains Mono', Menlo, monospace; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); padding: 2px 8px; border-radius: 3px; color: #0a84ff; font-weight: 700;">BUILD v1.8.38 · 2026-10-15</span>
+                <span style="font-size: 10px; font-family: 'JetBrains Mono', Menlo, monospace; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); padding: 2px 8px; border-radius: 3px; color: #e5e7eb; font-weight: 700;">BUILD v1.8.39 · 2026-10-15</span>
             </div>
 
             <!-- Dynamic Boot Status Text -->
-            <div id="daw-splash-status-text" style="font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.7); letter-spacing: 0.5px; height: 18px; margin-bottom: 12px; text-shadow: 0 0 8px rgba(0,0,0,0.8);">
+            <div id="daw-splash-status-text" style="font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.7); letter-spacing: 0.5px; height: 18px; margin-bottom: 14px; text-shadow: 0 0 8px rgba(0,0,0,0.8);">
                 Initializing 64-Bit Studio Audio Engine...
             </div>
 
-            <!-- Sleek Apple Linear Progress Bar -->
-            <div style="width: 320px; max-width: 80vw; height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; position: relative;">
-                <div id="daw-splash-progress-bar" style="height: 100%; width: 18%; background: #0a84ff; border-radius: 2px; box-shadow: 0 0 8px rgba(10, 132, 255, 0.6); transition: width 0.35s ease-out;"></div>
+            <!-- Sleek Silver Metallic Gradient Progress Bar -->
+            <div style="width: 340px; max-width: 82vw; height: 4px; background: rgba(255,255,255,0.12); border-radius: 2px; overflow: hidden; position: relative; box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);">
+                <div id="daw-splash-progress-bar" style="height: 100%; width: 18%; background: linear-gradient(90deg, #9ca3af 0%, #d1d5db 40%, #ffffff 75%, #e5e7eb 100%); border-radius: 2px; box-shadow: 0 0 12px rgba(255, 255, 255, 0.65), 0 0 4px rgba(255,255,255,0.9); transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);"></div>
             </div>
 
-            <!-- Prevalent VIP Recognition Card (Neil Horner & Niall Hanlon) -->
-            <div style="margin-top: 24px; padding: 14px 24px; background: #1c1c1e; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 5px; width: 100%; max-width: 580px; box-sizing: border-box; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
-                <div style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 9.5px; font-weight: 700; letter-spacing: 1.5px; color: #0a84ff; text-transform: uppercase; margin-bottom: 4px;">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0a84ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <!-- Borderless Floating VIP Recognition (Neil Horner & Niall Hanlon) -->
+            <div style="margin-top: 24px; padding: 4px 16px; background: transparent; border: none; width: 100%; max-width: 580px; box-sizing: border-box; text-align: center;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 10px; font-weight: 700; letter-spacing: 2px; color: rgba(255,255,255,0.7); text-transform: uppercase; margin-bottom: 5px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                     </svg>
                     VIP BETA TESTING &amp; WORKFLOW INPUT
                 </div>
-                <div style="font-size: 15px; font-weight: 700; color: #ffffff; letter-spacing: 0.3px; margin-bottom: 3px;">
+                <div style="font-size: 15px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px; margin-bottom: 4px; text-shadow: 0 2px 8px rgba(0,0,0,0.8);">
                     Neil Horner &amp; Niall Hanlon
                 </div>
-                <div style="font-size: 11.5px; color: rgba(255, 255, 255, 0.6); line-height: 1.45;">
+                <div style="font-size: 11.5px; color: rgba(255, 255, 255, 0.55); line-height: 1.5; max-width: 480px; margin: 0 auto;">
                     Special thanks for invaluable studio workflow guidance, creative direction, and beta testing.
                 </div>
             </div>
 
-            <div style="margin-top: 18px; font-size: 9.5px; color: rgba(255,255,255,0.35); letter-spacing: 1px; text-transform: uppercase;">
-                LocalFilm Ireland · High-Precision Edge Workstation &nbsp;·&nbsp; [Click or Space to Skip]
+            <!-- Footer Actions & Direct Feedback Trigger -->
+            <div style="margin-top: 20px; display: flex; align-items: center; gap: 14px; justify-content: center; flex-wrap: wrap;">
+                <span style="font-size: 9.5px; color: rgba(255,255,255,0.35); letter-spacing: 1px; text-transform: uppercase;">
+                    LocalFilm Ireland · High-Precision Edge Workstation &nbsp;·&nbsp; [Click or Space to Skip]
+                </span>
+                <button id="daw-splash-feedback-btn" type="button" title="Send Studio Feedback or Workflow Input to Alan Joyce & Team" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: #ffffff; font-size: 9.5px; font-weight: 600; letter-spacing: 0.8px; padding: 3px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: background 0.15s, border-color 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.12)'; this.style.borderColor='rgba(255,255,255,0.35)';" onmouseout="this.style.background='rgba(255,255,255,0.06)'; this.style.borderColor='rgba(255,255,255,0.15)';">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Send Feedback
+                </button>
             </div>
+        </div>
+    </div>
         </div>
     </div>
 
@@ -469,14 +498,21 @@
                             <button type="button" class="daw-menu-bar-btn" data-menu="help" style="background: none; border: none; color: inherit; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; transition: background 0.12s, color 0.12s;">
                                 HELP <span style="font-size: 7.5px; opacity: 0.5;">▾</span>
                             </button>
-                            <div id="daw-menu-dropdown-help" class="daw-menu-dropdown" style="display: none; position: absolute; top: calc(100% + 2px); left: 0; background: #0c0f17; border: 1px solid rgba(255,255,255,0.14); border-radius: 6px; min-width: 240px; box-shadow: 0 16px 36px rgba(0,0,0,0.92); z-index: 3100; padding: 4px 0;">
+                            <div id="daw-menu-dropdown-help" class="daw-menu-dropdown" style="display: none; position: absolute; top: calc(100% + 2px); left: 0; background: #0c0f17; border: 1px solid rgba(255,255,255,0.14); border-radius: 6px; min-width: 250px; box-shadow: 0 16px 36px rgba(0,0,0,0.92); z-index: 3100; padding: 4px 0;">
                                 <div class="daw-menu-item" id="daw-menu-help-welcome" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; font-weight: 600; transition: background 0.12s;">
                                     <span>Welcome Guide &amp; VIP Recognition...</span>
-                                    <span style="font-size: 9px; color: #0a84ff; font-family: monospace; font-weight: 700; background: rgba(10, 132, 255,0.15); border: 1px solid rgba(10, 132, 255,0.25); padding: 1px 5px; border-radius: 3px;">v1.8.36</span>
+                                    <span style="font-size: 9px; color: #e5e7eb; font-family: monospace; font-weight: 700; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); padding: 1px 5px; border-radius: 3px;">v1.8.39</span>
                                 </div>
                                 <div class="daw-menu-item" id="daw-menu-help-shortcuts" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; font-weight: 600; transition: background 0.12s;">
                                     <span>Keyboard Shortcuts Guide...</span>
                                     <span class="daw-menu-shortcut">?</span>
+                                </div>
+                                <div class="daw-menu-item" id="daw-menu-help-feedback" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; font-weight: 600; transition: background 0.12s;">
+                                    <span style="display: flex; align-items: center; gap: 7px;">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                        Send Studio Feedback / Discord...
+                                    </span>
+                                    <span style="font-size: 9px; color: #34d399; font-family: monospace; font-weight: 700; background: rgba(52, 211, 153, 0.15); border: 1px solid rgba(52, 211, 153, 0.3); padding: 1px 5px; border-radius: 3px;">DISPATCH</span>
                                 </div>
                                 <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 3px 0;"></div>
                                 <div class="daw-menu-item" id="daw-menu-help-about" style="padding: 7px 12px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
@@ -484,14 +520,14 @@
                                         <img src="/logo.png" alt="LocalFilm Ireland Logo" title="LocalFilm Ireland" style="height: 15px; width: auto; object-fit: contain; filter: drop-shadow(0 1px 4px rgba(0,0,0,0.6));" onerror="this.onerror=null; this.src='/logo.png';" />
                                         About Alan Joyce &amp; LocalFilm
                                     </span>
-                                    <span style="font-size: 9px; color: #0a84ff; font-family: monospace; font-weight: 700; background: rgba(10, 132, 255,0.15); border: 1px solid rgba(10, 132, 255,0.25); padding: 1px 5px; border-radius: 3px;">v1.8.36</span>
+                                    <span style="font-size: 9px; color: #e5e7eb; font-family: monospace; font-weight: 700; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); padding: 1px 5px; border-radius: 3px;">v1.8.39</span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Right Quick Layout Indicator, Release Badge & Menubar Close Button -->
                         <div style="margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 10px; color: rgba(255,255,255,0.5);">
-                            <span style="padding: 1px 6px; background: rgba(10, 132, 255,0.08); color: #0a84ff; border-radius: 3px; border: 1px solid rgba(10, 132, 255,0.2); font-family: monospace; font-size: 9.5px; font-weight: 700;">v1.8.36</span>
+                            <span style="padding: 1px 6px; background: rgba(255,255,255,0.08); color: #e5e7eb; border-radius: 3px; border: 1px solid rgba(255,255,255,0.18); font-family: monospace; font-size: 9.5px; font-weight: 700;">v1.8.39</span>
                             <span id="daw-layout-status-tag" style="padding: 1px 6px; background: rgba(255,255,255,0.06); border-radius: 3px; border: 1px solid rgba(255,255,255,0.1); font-weight: 700; letter-spacing: 0.5px;">STUDIO MODE</span>
                             <button id="daw-menubar-close-btn" title="Close DAW &amp; Return to LocalFilm.online" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); width: 22px; height: 22px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s; margin-left: 2px;" onmouseover="this.style.background='rgba(255,69,58,0.2)'; this.style.borderColor='#ff453a'; this.style.color='#ff453a';" onmouseout="this.style.background='rgba(255,255,255,0.04)'; this.style.borderColor='rgba(255,255,255,0.1)'; this.style.color='rgba(255,255,255,0.7)';">
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -3163,7 +3199,7 @@
                                     <div>
                                         <div style="display: flex; align-items: center; gap: 8px;">
                                             <h4 style="font-size: 14px; font-weight: 800; color: #ffffff; margin: 0; letter-spacing: 0.3px;">About Alan Joyce &amp; LocalFilm</h4>
-                                            <span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; background: rgba(10, 132, 255,0.15); color: #0a84ff; border: 1px solid rgba(10, 132, 255,0.3); font-family: monospace;">LOCALDAW v1.8.36</span>
+                                            <span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; background: rgba(255, 255, 255, 0.15); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.3); font-family: monospace;">LOCALDAW v1.8.39</span>
                                         </div>
                                         <span style="font-size: 10.5px; color: rgba(255,255,255,0.6); font-weight: 500;">Founder Vision &amp; Sovereign Creative Infrastructure • localfilm.online</span>
                                     </div>
@@ -3200,25 +3236,44 @@
                                 <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                                     <div>
                                         <span style="display: block; font-size: 9.5px; font-weight: 700; color: rgba(255,255,255,0.5); text-transform: uppercase;">Audio Technology</span>
-                                        <span style="font-size: 11.5px; font-weight: 700; color: #ffffff;">LocalFilm Studio DAW v1.8.36</span>
+                                        <span style="font-size: 11.5px; font-weight: 700; color: #ffffff;">LocalFilm Studio DAW v1.8.39</span>
                                         <p style="margin: 2px 0 0; font-size: 10.5px; color: rgba(255,255,255,0.6);">Native Web Audio DSP Suite with 10 Open-Source Plugins &amp; Offline Stem Stems Engine</p>
                                     </div>
                                     <div>
                                         <span style="display: block; font-size: 9.5px; font-weight: 700; color: rgba(255,255,255,0.5); text-transform: uppercase;">Founder &amp; Architect</span>
                                         <span style="font-size: 11.5px; font-weight: 700; color: #ffffff;">Alan Joyce</span>
-                                        <p style="margin: 2px 0 0; font-size: 10.5px; color: rgba(255,255,255,0.6);"><a href="https://localfilm.online" target="_blank" rel="noopener noreferrer" style="color: #0a84ff; text-decoration: none;">localfilm.online</a></p>
+                                        <p style="margin: 2px 0 0; font-size: 10.5px; color: rgba(255,255,255,0.6);"><a href="https://localfilm.online" target="_blank" rel="noopener noreferrer" style="color: #ffffff; text-decoration: underline;">localfilm.online</a></p>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Tab 2: Release Changelog Body -->
                             <div id="daw-about-content-changelog" style="flex: 1; overflow-y: auto; padding: 18px 20px; display: none; flex-direction: column; gap: 14px; font-size: 12px; line-height: 1.5; color: rgba(255,255,255,0.85); scrollbar-width: thin;">
+                                <!-- v1.8.39 Card (Latest) -->
+                                <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 10px; padding: 14px 16px;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span style="font-size: 12.5px; font-weight: 800; color: #ffffff; font-family: monospace;">v1.8.39</span>
+                                            <span style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px; background: rgba(255, 255, 255, 0.15); color: #ffffff; font-weight: 800;">LATEST RELEASE</span>
+                                        </div>
+                                        <time datetime="2026-10-15" style="font-size: 10.5px; color: rgba(255,255,255,0.5); font-family: monospace;">2026-10-15</time>
+                                    </div>
+                                    <div style="font-size: 11.5px; color: #ffffff; font-weight: 700; margin-bottom: 6px;">Borderless Splash Screen, Silver Metallic Loader, Discord Feed Relay &amp; Master/Track VU Metering</div>
+                                    <ul style="margin: 0; padding-left: 18px; color: rgba(255,255,255,0.78); font-size: 11px; display: flex; flex-direction: column; gap: 4px;">
+                                        <li><strong>Clean Borderless Splash Screen:</strong> Removed card box around VIP Beta Testing (honoring Neil Horner &amp; Niall Hanlon), floating cleanly on pure black canvas with subtle monochrome typography.</li>
+                                        <li><strong>Brushed Silver Progress Bar:</strong> Upgraded boot loader progress bar to a sleek silver/metallic gradient with dual ambient glow and responsive fill animation.</li>
+                                        <li><strong>Discord Feedback Dispatch:</strong> Added integrated Studio Feedback &amp; Workflow Input modal connecting directly to Discord server channels (e.g. <code style="color: #ffffff;">#localdaw</code>) with Web Audio hardware diagnostics.</li>
+                                        <li><strong>Master &amp; Track VU Metering:</strong> Calibrated European Broadcast standard VU scaling (-48 dBFS floor to 0 dBFS ceiling) across master fader and multi-track channels during audio playback and live recording.</li>
+                                        <li><strong>Social &amp; SEO Open Graph Metadata:</strong> Deployed high-resolution Open Graph and Twitter Card tags with Wicklow Hub branding and dedicated LocalDAW emblem.</li>
+                                    </ul>
+                                </div>
+
                                 <!-- v1.8.36 Card -->
-                                <div style="background: rgba(10, 132, 255, 0.08); border: 1px solid rgba(10, 132, 255, 0.4); border-radius: 10px; padding: 14px 16px;">
+                                <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 14px 16px;">
                                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
                                         <div style="display: flex; align-items: center; gap: 8px;">
                                             <span style="font-size: 12.5px; font-weight: 800; color: #0a84ff; font-family: monospace;">v1.8.36</span>
-                                            <span style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px; background: rgba(10, 132, 255, 0.25); color: #0a84ff; font-weight: 800;">LATEST RELEASE</span>
+                                            <span style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); color: rgba(255,255,255,0.6); font-weight: 700;">MILESTONE</span>
                                         </div>
                                         <time datetime="2026-10-15" style="font-size: 10.5px; color: rgba(255,255,255,0.5); font-family: monospace;">2026-10-15</time>
                                     </div>
@@ -3363,6 +3418,103 @@
                                 <button id="daw-about-founder-ok-btn" type="button" style="background: linear-gradient(135deg, #30d158 0%, #059669 100%); border: none; color: #fff; padding: 6px 20px; border-radius: 6px; font-size: 11.5px; font-weight: 800; cursor: pointer; box-shadow: 0 0 12px rgba(48, 209, 88, 0.35);">Close</button>
                             </div>
 
+        </div>
+    </div>
+
+    <!-- LocalDAW Studio Feedback & Discord Workflow Dispatch Modal -->
+    <div id="daw-feedback-modal" style="position: absolute; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(14px); z-index: 3220; display: none; align-items: center; justify-content: center; padding: 20px;">
+        <div style="background: #0d111a; border: 1px solid rgba(255,255,255,0.18); border-radius: 14px; width: 100%; max-width: 580px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,0.95);">
+            <!-- Header -->
+            <div style="padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <h4 style="font-size: 14px; font-weight: 800; color: #ffffff; margin: 0; letter-spacing: 0.3px;">Studio Feedback &amp; Workflow Dispatch</h4>
+                            <span style="font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 3px; background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); font-family: monospace;">DISCORD FEED</span>
+                        </div>
+                        <span style="font-size: 10.5px; color: rgba(255,255,255,0.6); font-weight: 500;">Send workflow input, bug reports, and suggestions directly to Alan Joyce</span>
+                    </div>
+                </div>
+                <button id="daw-feedback-close-btn" type="button" aria-label="Close Feedback Dialog" style="background: none; border: none; color: rgba(255,255,255,0.5); font-size: 22px; font-weight: 800; cursor: pointer; line-height: 1; padding: 0 6px; transition: color 0.15s ease;" onmouseover="this.style.color='#ffffff'" onmouseout="this.style.color='rgba(255,255,255,0.5)'">&times;</button>
+            </div>
+
+            <!-- Body Form -->
+            <form id="daw-feedback-form" style="padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; margin: 0;">
+                <!-- Category Switcher -->
+                <div>
+                    <label style="display: block; font-size: 10.5px; font-weight: 700; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px;">Category</label>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 6px;">
+                        <label class="daw-fb-cat-btn" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.25); border-radius: 6px; padding: 6px 8px; font-size: 11px; font-weight: 600; color: #ffffff; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px; user-select: none;">
+                            <input type="radio" name="fb_category" value="Workflow Suggestion" checked style="display: none;">
+                            <span>Workflow</span>
+                        </label>
+                        <label class="daw-fb-cat-btn" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 6px 8px; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.7); cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px; user-select: none;">
+                            <input type="radio" name="fb_category" value="Bug / Glitch Report" style="display: none;">
+                            <span>Bug Report</span>
+                        </label>
+                        <label class="daw-fb-cat-btn" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 6px 8px; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.7); cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px; user-select: none;">
+                            <input type="radio" name="fb_category" value="Feature Request" style="display: none;">
+                            <span>Feature</span>
+                        </label>
+                        <label class="daw-fb-cat-btn" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 6px 8px; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.7); cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px; user-select: none;">
+                            <input type="radio" name="fb_category" value="Audio DSP / Sound" style="display: none;">
+                            <span>Audio DSP</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Reporter Details -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="display: block; font-size: 10.5px; font-weight: 700; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px;">Your Name / Handle</label>
+                        <input type="text" id="daw-fb-name" placeholder="e.g. Neil Horner" style="width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 8px 10px; font-size: 12px; color: #ffffff; outline: none; transition: border-color 0.15s;" onfocus="this.style.borderColor='rgba(255,255,255,0.4)';" onblur="this.style.borderColor='rgba(255,255,255,0.15)';">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 10.5px; font-weight: 700; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px;">Contact / Discord Tag</label>
+                        <input type="text" id="daw-fb-contact" placeholder="e.g. neil#1234 or email" style="width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 8px 10px; font-size: 12px; color: #ffffff; outline: none; transition: border-color 0.15s;" onfocus="this.style.borderColor='rgba(255,255,255,0.4)';" onblur="this.style.borderColor='rgba(255,255,255,0.15)';">
+                    </div>
+                </div>
+
+                <!-- Feedback Message -->
+                <div>
+                    <label style="display: block; font-size: 10.5px; font-weight: 700; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px;">Detailed Feedback / Workflow Input *</label>
+                    <textarea id="daw-fb-message" rows="4" required placeholder="What worked well? What could be improved or added to streamline your audio workflow?" style="width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 8px 10px; font-size: 12px; color: #ffffff; outline: none; resize: vertical; min-height: 80px; font-family: inherit; transition: border-color 0.15s;" onfocus="this.style.borderColor='rgba(255,255,255,0.4)';" onblur="this.style.borderColor='rgba(255,255,255,0.15)';"></textarea>
+                </div>
+
+                <!-- Diagnostics Checkbox -->
+                <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: rgba(255,255,255,0.85); cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="daw-fb-include-diag" checked style="accent-color: #34d399; width: 14px; height: 14px; cursor: pointer;">
+                        Attach Web Audio Hardware Diagnostics (Sample Rate, Latency, Clocks)
+                    </label>
+                    <span id="daw-fb-diag-specs" style="font-size: 9.5px; color: rgba(255,255,255,0.45); font-family: monospace;">48kHz · 64-Bit</span>
+                </div>
+
+                <!-- Discord Webhook Relay Setting -->
+                <div style="background: rgba(0,0,0,0.3); border: 1px dashed rgba(255,255,255,0.12); border-radius: 6px; padding: 10px 12px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                        <span style="font-size: 10.5px; font-weight: 700; color: rgba(255,255,255,0.7); letter-spacing: 0.5px;">DISCORD SERVER WEBHOOK URL</span>
+                        <span style="font-size: 9.5px; color: rgba(255,255,255,0.4);">Optional Custom Feed</span>
+                    </div>
+                    <input type="url" id="daw-fb-webhook-url" placeholder="https://discord.com/api/webhooks/..." style="width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.12); border-radius: 5px; padding: 6px 8px; font-size: 11px; color: #e5e7eb; font-family: monospace; outline: none;">
+                    <p style="margin: 4px 0 0; font-size: 10px; color: rgba(255,255,255,0.45); line-height: 1.35;">Paste your Discord channel webhook URL to receive notifications directly into your server, or leave blank to send to the LocalFilm Studio relay.</p>
+                </div>
+
+                <!-- Status / Dispatch Notice -->
+                <div id="daw-fb-status" style="display: none; padding: 8px 12px; border-radius: 6px; font-size: 11px; text-align: center; font-weight: 600;"></div>
+
+                <!-- Footer Action Buttons -->
+                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.08);">
+                    <button type="button" id="daw-feedback-cancel-btn" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; padding: 7px 16px; font-size: 11.5px; font-weight: 600; color: rgba(255,255,255,0.75); cursor: pointer; transition: all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.background='rgba(255,255,255,0.06)';">Cancel</button>
+                    <button type="submit" id="daw-feedback-submit-btn" style="background: linear-gradient(180deg, #ffffff 0%, #d1d5db 100%); border: 1px solid rgba(255,255,255,0.8); border-radius: 6px; padding: 7px 20px; font-size: 11.5px; font-weight: 800; color: #000000; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 0 14px rgba(255, 255, 255, 0.35); transition: transform 0.1s, box-shadow 0.15s;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        Dispatch to Studio HQ
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 

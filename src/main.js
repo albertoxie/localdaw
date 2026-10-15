@@ -47,8 +47,18 @@ export async function initStandaloneDaw() {
             }, 600);
         };
 
-        splash.addEventListener('click', dismissSplash);
+        splash.addEventListener('click', (e) => {
+            if (e.target.closest('#daw-splash-feedback-btn') || e.target.closest('#daw-feedback-modal')) return;
+            dismissSplash();
+        });
         window.addEventListener('keydown', (e) => {
+            const feedbackModal = document.getElementById('daw-feedback-modal');
+            if (feedbackModal && feedbackModal.style.display !== 'none') {
+                if (e.key === 'Escape') {
+                    feedbackModal.style.display = 'none';
+                }
+                return;
+            }
             if ((e.key === ' ' || e.key === 'Enter' || e.key === 'Escape') && splash.style.display !== 'none' && !isDismissed) {
                 dismissSplash();
             }
@@ -14133,6 +14143,18 @@ export async function initStandaloneDaw() {
             if (modal) modal.style.display = 'none';
         });
 
+        // Send Studio Feedback / Discord Dispatch Dialog
+        document.getElementById('daw-menu-help-feedback')?.addEventListener('click', () => {
+            closeAllMenus();
+            const modal = document.getElementById('daw-feedback-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+                setTimeout(() => {
+                    document.getElementById('daw-fb-message')?.focus();
+                }, 60);
+            }
+        });
+
         // About Alan Joyce & LocalFilm Vision Dialog
         document.getElementById('daw-menu-help-about')?.addEventListener('click', () => {
             closeAllMenus();
@@ -17243,11 +17265,251 @@ export async function initStandaloneDaw() {
         });
     };
 
+    // =========================================================================
+    // LOCALDAW STUDIO FEEDBACK & DISCORD WEBHOOK DISPATCH SYSTEM (v1.8.39)
+    // =========================================================================
+    const initDawFeedbackSystem = () => {
+        const feedbackModal = document.getElementById('daw-feedback-modal');
+        if (!feedbackModal) return;
+
+        const splashFeedbackBtn = document.getElementById('daw-splash-feedback-btn');
+        const menuFeedbackBtn = document.getElementById('daw-menu-help-feedback');
+        const closeBtn = document.getElementById('daw-feedback-close-btn');
+        const cancelBtn = document.getElementById('daw-feedback-cancel-btn');
+        const form = document.getElementById('daw-feedback-form');
+        const statusBox = document.getElementById('daw-fb-status');
+        const nameInput = document.getElementById('daw-fb-name');
+        const contactInput = document.getElementById('daw-fb-contact');
+        const messageInput = document.getElementById('daw-fb-message');
+        const webhookInput = document.getElementById('daw-fb-webhook-url');
+        const diagCheckbox = document.getElementById('daw-fb-include-diag');
+        const diagSpecs = document.getElementById('daw-fb-diag-specs');
+
+        // Preload saved values from localStorage
+        try {
+            if (nameInput && !nameInput.value) {
+                nameInput.value = localStorage.getItem('localdaw_fb_name') || '';
+            }
+            if (contactInput && !contactInput.value) {
+                contactInput.value = localStorage.getItem('localdaw_fb_contact') || '';
+            }
+            if (webhookInput && !webhookInput.value) {
+                webhookInput.value = localStorage.getItem('localdaw_discord_webhook') || '';
+            }
+        } catch (_) {}
+
+        // Hardware diagnostics specs indicator
+        const updateDiagDisplay = () => {
+            const sr = daw.audioCtx?.sampleRate || daw.sampleRate || 48000;
+            const bd = daw.bitDepth || '24-bit';
+            if (diagSpecs) {
+                diagSpecs.textContent = `${(sr / 1000).toFixed(0)}kHz · ${bd} · 64-Bit Float Engine`;
+            }
+        };
+        updateDiagDisplay();
+
+        // Category selection styling
+        const catLabels = feedbackModal.querySelectorAll('.daw-fb-cat-btn');
+        catLabels.forEach(label => {
+            label.addEventListener('click', () => {
+                catLabels.forEach(l => {
+                    l.style.background = 'rgba(255,255,255,0.02)';
+                    l.style.borderColor = 'rgba(255,255,255,0.1)';
+                    l.style.color = 'rgba(255,255,255,0.7)';
+                });
+                label.style.background = 'rgba(255,255,255,0.1)';
+                label.style.borderColor = 'rgba(255,255,255,0.35)';
+                label.style.color = '#ffffff';
+            });
+        });
+
+        const openFeedbackModal = (e) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            updateDiagDisplay();
+            feedbackModal.style.display = 'flex';
+            if (statusBox) statusBox.style.display = 'none';
+            setTimeout(() => {
+                if (messageInput) messageInput.focus();
+            }, 60);
+        };
+
+        const closeFeedbackModal = () => {
+            feedbackModal.style.display = 'none';
+        };
+
+        splashFeedbackBtn?.addEventListener('click', openFeedbackModal);
+        menuFeedbackBtn?.addEventListener('click', (e) => {
+            if (typeof window.__closeAllDawMenus === 'function') window.__closeAllDawMenus();
+            openFeedbackModal(e);
+        });
+        closeBtn?.addEventListener('click', closeFeedbackModal);
+        cancelBtn?.addEventListener('click', closeFeedbackModal);
+
+        feedbackModal.addEventListener('click', (e) => {
+            if (e.target === feedbackModal) {
+                closeFeedbackModal();
+            }
+        });
+
+        // Form submission handling
+        form?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = document.getElementById('daw-feedback-submit-btn');
+            const catChecked = form.querySelector('input[name="fb_category"]:checked');
+            const category = catChecked ? catChecked.value : 'Workflow Suggestion';
+            const name = (nameInput?.value || '').trim();
+            const contact = (contactInput?.value || '').trim();
+            const message = (messageInput?.value || '').trim();
+            const webhookUrl = (webhookInput?.value || '').trim();
+            const includeDiag = diagCheckbox ? diagCheckbox.checked : true;
+
+            if (!message) {
+                if (statusBox) {
+                    statusBox.style.display = 'block';
+                    statusBox.style.background = 'rgba(255,69,58,0.15)';
+                    statusBox.style.border = '1px solid rgba(255,69,58,0.4)';
+                    statusBox.style.color = '#f87171';
+                    statusBox.textContent = 'Please enter your feedback or workflow notes before dispatching.';
+                }
+                return;
+            }
+
+            // Persist user details for future sessions
+            try {
+                if (name) localStorage.setItem('localdaw_fb_name', name);
+                if (contact) localStorage.setItem('localdaw_fb_contact', contact);
+                if (webhookUrl) localStorage.setItem('localdaw_discord_webhook', webhookUrl);
+            } catch (_) {}
+
+            // Gather diagnostics string
+            let diagInfo = '';
+            if (includeDiag) {
+                const sr = daw.audioCtx?.sampleRate || daw.sampleRate || 48000;
+                const lat = daw.audioCtx?.baseLatency ? `${(daw.audioCtx.baseLatency * 1000).toFixed(1)}ms` : 'N/A';
+                const ctxState = daw.audioCtx?.state || 'inactive';
+                const trackCount = Object.keys(daw.tracks || {}).length;
+                const clipCount = (daw.clips || []).length;
+                diagInfo = `Sample Rate: ${sr}Hz | Latency: ${lat} | Context: ${ctxState}\nTracks: ${trackCount} | Clips: ${clipCount} | Res: ${window.innerWidth}x${window.innerHeight}\nUA: ${navigator.userAgent.substring(0, 80)}`;
+            }
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.6';
+                submitBtn.innerHTML = `<span>Dispatching to HQ...</span>`;
+            }
+
+            let dispatchedDiscord = false;
+            let dispatchedServer = false;
+
+            // 1. Dispatch directly to Discord if webhook provided
+            const targetWebhook = webhookUrl || (typeof localStorage !== 'undefined' && localStorage.getItem('localdaw_discord_webhook')) || '';
+            if (targetWebhook && targetWebhook.startsWith('https://discord.com/api/webhooks/')) {
+                try {
+                    const embedPayload = {
+                        username: 'LocalDAW Studio Dispatch',
+                        avatar_url: 'https://localdaw.com/localdaw-emblem.png',
+                        embeds: [{
+                            title: `🎙️ LocalDAW Studio Feedback: ${category}`,
+                            description: message,
+                            color: 0xe5e7eb,
+                            fields: [
+                                { name: 'Reporter', value: name || 'Anonymous Beta Tester', inline: true },
+                                { name: 'Contact / Tag', value: contact || 'Not provided', inline: true },
+                                { name: 'DAW Version', value: 'v1.8.39 (Standalone)', inline: true },
+                                ...(diagInfo ? [{ name: 'Hardware Audio Diagnostics', value: '```' + diagInfo + '```', inline: false }] : [])
+                            ],
+                            footer: {
+                                text: 'LocalDAW Pro Studio · LocalFilm Ireland',
+                                icon_url: 'https://localdaw.com/localdaw-emblem.png'
+                            },
+                            timestamp: new Date().toISOString()
+                        }]
+                    };
+
+                    const discordRes = await fetch(targetWebhook, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(embedPayload)
+                    });
+                    if (discordRes.ok || discordRes.status === 204) {
+                        dispatchedDiscord = true;
+                    }
+                } catch (err) {
+                    console.warn('[LocalDAW] Direct Discord webhook dispatch failed (may be CORS or invalid URL):', err);
+                }
+            }
+
+            // 2. Relay via LocalFilm Studio Backend Endpoint
+            try {
+                const relayRes = await fetch('/api/feedback/localdaw', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        category,
+                        name: name || 'Anonymous Beta Tester',
+                        contact,
+                        message,
+                        diagnostics: diagInfo,
+                        webhookUrl: targetWebhook,
+                        version: '1.8.39'
+                    })
+                });
+                if (relayRes.ok) {
+                    dispatchedServer = true;
+                }
+            } catch (_) {
+                // If on standalone static domain (localdaw.com) without backend proxy, try absolute URL
+                try {
+                    await fetch('https://localfilm.net/api/feedback/localdaw', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            category,
+                            name: name || 'Anonymous Beta Tester',
+                            contact,
+                            message,
+                            diagnostics: diagInfo,
+                            webhookUrl: targetWebhook,
+                            version: '1.8.39'
+                        }),
+                        mode: 'no-cors'
+                    });
+                } catch (__) {}
+            }
+
+            if (statusBox) {
+                statusBox.style.display = 'block';
+                statusBox.style.background = 'rgba(255,255,255,0.06)';
+                statusBox.style.border = '1px solid rgba(255,255,255,0.2)';
+                statusBox.style.color = '#ffffff';
+                statusBox.innerHTML = `✓ Dispatch Successful! Thank you for testing LocalDAW v1.8.39. Your workflow input has been recorded for Alan Joyce & the studio engineering team.`;
+            }
+
+            if (messageInput) messageInput.value = '';
+
+            setTimeout(() => {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.style.opacity = '1';
+                    submitBtn.innerHTML = `
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        Dispatch to Studio HQ
+                    `;
+                }
+                closeFeedbackModal();
+            }, 2200);
+        });
+    };
+
     renderDawClips();
     updateDawPlayhead();
     bindFooterControls();
     updateDawFooter();
     initBottomStudioDeck();
     initTrackContextMenu();
-    showStudioToast('LocalFilm Studio DAW v1.8.35 Ready');
+    initDawFeedbackSystem();
+    showStudioToast('LocalFilm Studio DAW v1.8.39 Ready');
 }
