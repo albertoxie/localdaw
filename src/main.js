@@ -4341,10 +4341,12 @@ export async function initStandaloneDaw() {
 
                     // Real-Time Track Lane Highlight & Target Detection
                     const lanes = document.querySelectorAll('.timeline-lane');
+                    let hoveredAnyLane = false;
                     lanes.forEach(l => {
                         const lRect = l.getBoundingClientRect();
                         if (moveEv.clientY >= lRect.top && moveEv.clientY <= lRect.bottom) {
                             candidateTrackId = l.getAttribute('data-track-id');
+                            hoveredAnyLane = true;
                             l.style.background = 'rgba(10, 132, 255, 0.12)';
                             l.style.borderTop = '1px solid rgba(10, 132, 255, 0.4)';
                             l.style.borderBottom = '1px solid rgba(10, 132, 255, 0.4)';
@@ -4356,36 +4358,85 @@ export async function initStandaloneDaw() {
                         }
                     });
 
-                    // Real-Time Drop Ghost Preview on Candidate Track Lane (Displays exact size, duration and timecode on target track)
-                    const candLane = candidateTrackId ? document.getElementById(`timeline-lane-${candidateTrackId}`) : null;
-                    if (candLane && dropGhostEl) {
-                        if (dropGhostEl.parentElement !== candLane) {
-                            candLane.appendChild(dropGhostEl);
+                    // Auto-Add Track Detection: Dragging below the bottom-most track lane
+                    if (!hoveredAnyLane && lanes.length > 0) {
+                        const lastLane = lanes[lanes.length - 1];
+                        const lastLaneRect = lastLane.getBoundingClientRect();
+                        if (moveEv.clientY > lastLaneRect.bottom - 4) {
+                            candidateTrackId = '__NEW_TRACK__';
                         }
-                        const ghostLeft = Math.max(0, proposedLeaderOffset * daw.zoom);
-                        const ghostWidth = Math.max(34, activeDuration * daw.zoom);
-                        const targetTrackObj = daw.tracks[candidateTrackId];
-                        const durStr = activeDuration >= 60 ? `${Math.floor(activeDuration / 60)}m ${(activeDuration % 60).toFixed(1)}s` : `${activeDuration.toFixed(2)}s`;
+                    }
 
-                        dropGhostEl.style.display = 'flex';
-                        dropGhostEl.style.top = '4px';
-                        dropGhostEl.style.bottom = '4px';
-                        dropGhostEl.style.left = `${ghostLeft}px`;
-                        dropGhostEl.style.width = `${ghostWidth}px`;
+                    // Real-Time Drop Ghost Preview on Candidate Track Lane or Bottom New Track Zone
+                    if (candidateTrackId === '__NEW_TRACK__') {
+                        const lanesContainer = document.getElementById('timeline-lanes-container');
+                        if (lanesContainer && dropGhostEl) {
+                            if (dropGhostEl.parentElement !== lanesContainer) {
+                                lanesContainer.appendChild(dropGhostEl);
+                            }
+                            const lastLane = lanes[lanes.length - 1];
+                            const ghostTop = (lastLane ? (lastLane.offsetTop + lastLane.offsetHeight + 4) : 10);
+                            const ghostLeft = Math.max(0, proposedLeaderOffset * daw.zoom);
+                            const ghostWidth = Math.max(34, activeDuration * daw.zoom);
+                            const durStr = activeDuration >= 60 ? `${Math.floor(activeDuration / 60)}m ${(activeDuration % 60).toFixed(1)}s` : `${activeDuration.toFixed(2)}s`;
 
-                        dropGhostEl.innerHTML = `
-                            <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; pointer-events: none; z-index: 10;">
-                                <span style="font-size: 8px; font-weight: 800; background: #0a84ff; color: #ffffff; padding: 1px 4px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px;">TARGET</span>
-                                <span style="font-size: 11px; font-weight: 800; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${clip.name}</span>
-                                <span style="font-size: 8.5px; color: rgba(255,255,255,0.7); font-family: monospace;">➔ ${targetTrackObj?.name || candidateTrackId}</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; pointer-events: none; z-index: 10;">
-                                <span style="font-size: 9px; font-family: monospace; font-weight: 800; color: #34d399; background: rgba(0,0,0,0.65); padding: 1px 5px; border-radius: 3px;">${proposedLeaderOffset.toFixed(2)}s</span>
-                                <span style="font-size: 9px; font-family: monospace; font-weight: 800; color: #ffffff; background: rgba(0,0,0,0.65); padding: 1px 5px; border-radius: 3px;">${durStr}</span>
-                            </div>
-                        `;
-                    } else if (dropGhostEl) {
-                        dropGhostEl.style.display = 'none';
+                            dropGhostEl.style.display = 'flex';
+                            dropGhostEl.style.position = 'absolute';
+                            dropGhostEl.style.top = `${ghostTop}px`;
+                            dropGhostEl.style.height = `${lastLane?.offsetHeight || 68}px`;
+                            dropGhostEl.style.left = `${ghostLeft}px`;
+                            dropGhostEl.style.width = `${ghostWidth}px`;
+                            dropGhostEl.style.border = '2px dashed #34d399';
+                            dropGhostEl.style.background = 'rgba(52, 211, 153, 0.18)';
+                            dropGhostEl.style.boxShadow = '0 0 16px rgba(52, 211, 153, 0.35)';
+
+                            dropGhostEl.innerHTML = `
+                                <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; pointer-events: none; z-index: 10;">
+                                    <span style="font-size: 8px; font-weight: 800; background: #34d399; color: #000000; padding: 1px 5px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px;">+ NEW TRACK</span>
+                                    <span style="font-size: 11px; font-weight: 800; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${clip.name}</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; pointer-events: none; z-index: 10;">
+                                    <span style="font-size: 9px; font-family: monospace; font-weight: 800; color: #34d399; background: rgba(0,0,0,0.65); padding: 1px 5px; border-radius: 3px;">${proposedLeaderOffset.toFixed(2)}s</span>
+                                    <span style="font-size: 9px; font-family: monospace; font-weight: 800; color: #ffffff; background: rgba(0,0,0,0.65); padding: 1px 5px; border-radius: 3px;">${durStr}</span>
+                                </div>
+                            `;
+                        }
+                    } else {
+                        if (dropGhostEl) {
+                            dropGhostEl.style.border = '2px dashed #0a84ff';
+                            dropGhostEl.style.background = 'rgba(10, 132, 255, 0.2)';
+                            dropGhostEl.style.boxShadow = 'none';
+                        }
+                        const candLane = candidateTrackId ? document.getElementById(`timeline-lane-${candidateTrackId}`) : null;
+                        if (candLane && dropGhostEl) {
+                            if (dropGhostEl.parentElement !== candLane) {
+                                candLane.appendChild(dropGhostEl);
+                            }
+                            const ghostLeft = Math.max(0, proposedLeaderOffset * daw.zoom);
+                            const ghostWidth = Math.max(34, activeDuration * daw.zoom);
+                            const targetTrackObj = daw.tracks[candidateTrackId];
+                            const durStr = activeDuration >= 60 ? `${Math.floor(activeDuration / 60)}m ${(activeDuration % 60).toFixed(1)}s` : `${activeDuration.toFixed(2)}s`;
+
+                            dropGhostEl.style.display = 'flex';
+                            dropGhostEl.style.top = '4px';
+                            dropGhostEl.style.bottom = '4px';
+                            dropGhostEl.style.left = `${ghostLeft}px`;
+                            dropGhostEl.style.width = `${ghostWidth}px`;
+
+                            dropGhostEl.innerHTML = `
+                                <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; pointer-events: none; z-index: 10;">
+                                    <span style="font-size: 8px; font-weight: 800; background: #0a84ff; color: #ffffff; padding: 1px 4px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px;">TARGET</span>
+                                    <span style="font-size: 11px; font-weight: 800; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${clip.name}</span>
+                                    <span style="font-size: 8.5px; color: rgba(255,255,255,0.7); font-family: monospace;">➔ ${targetTrackObj?.name || candidateTrackId}</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; pointer-events: none; z-index: 10;">
+                                    <span style="font-size: 9px; font-family: monospace; font-weight: 800; color: #34d399; background: rgba(0,0,0,0.65); padding: 1px 5px; border-radius: 3px;">${proposedLeaderOffset.toFixed(2)}s</span>
+                                    <span style="font-size: 9px; font-family: monospace; font-weight: 800; color: #ffffff; background: rgba(0,0,0,0.65); padding: 1px 5px; border-radius: 3px;">${durStr}</span>
+                                </div>
+                            `;
+                        } else if (dropGhostEl) {
+                            dropGhostEl.style.display = 'none';
+                        }
                     }
                 };
 
@@ -4515,8 +4566,18 @@ export async function initStandaloneDaw() {
                             }
                         });
 
-                        // 2D Track Transfer: Reparent all co-selected clips proportionally based on track index diff
-                        if (candidateTrackId && daw.tracks[candidateTrackId]) {
+                        // 2D Track Transfer: Reparent all co-selected clips proportionally based on track index diff, or auto-create new track if dropped at bottom
+                        if (candidateTrackId === '__NEW_TRACK__') {
+                            const newTrackId = addNewEmptyTrack('audio');
+                            if (newTrackId && daw.tracks[newTrackId]) {
+                                daw.clips.forEach(c => {
+                                    if (daw.selectedClipIds.has(c.id)) {
+                                        c.trackId = newTrackId;
+                                    }
+                                });
+                                showStudioToast(`Auto-created "${daw.tracks[newTrackId].name}" for dropped clip`);
+                            }
+                        } else if (candidateTrackId && daw.tracks[candidateTrackId]) {
                             const targetTrackIndex = trackListKeys.indexOf(candidateTrackId);
                             const trackIndexDelta = targetTrackIndex - sourceTrackIndex;
 
@@ -5315,6 +5376,310 @@ export async function initStandaloneDaw() {
         window._syncBottomDeckClipInspector?.();
         showStudioToast(`Reversed audio on [${clip.name}]`);
     };
+
+    // ═════════════════════════════════════════════════════════════════
+    // TRACK-LEVEL PEAK NORMALIZATION ENGINE (0.0 dBFS PRO TOOLS STYLE)
+    // ═════════════════════════════════════════════════════════════════
+    const normalizeTrackDAW = (trackId) => {
+        const targetId = trackId || daw._activeFxTrackId || (daw.tracks && Object.keys(daw.tracks)[0]);
+        const track = daw.tracks && daw.tracks[targetId];
+        if (!track) {
+            showStudioToast('Select an active audio track to normalize');
+            return;
+        }
+
+        const clipsOnTrack = (daw.clips || []).filter(c => c.trackId === targetId && c.buffer);
+        if (clipsOnTrack.length === 0) {
+            showStudioToast(`Track "${track.name}" has no audio clips to normalize`);
+            return;
+        }
+
+        // Find the global maximum sample peak across all clips on this track
+        let maxPeak = 0;
+        clipsOnTrack.forEach(clip => {
+            const numChannels = clip.buffer.numberOfChannels;
+            for (let ch = 0; ch < numChannels; ch++) {
+                const data = clip.buffer.getChannelData(ch);
+                for (let i = 0; i < data.length; i++) {
+                    const abs = Math.abs(data[i]);
+                    if (abs > maxPeak) maxPeak = abs;
+                }
+            }
+        });
+
+        if (maxPeak <= 0.00001) {
+            showStudioToast(`Track "${track.name}" is completely silent (cannot normalize)`);
+            return;
+        }
+
+        pushDawHistory(`Peak Normalize Track [${track.name}]`);
+        // Proportional normalization to 0.0 dBFS (peak 1.0)
+        const normFactor = 1.0 / maxPeak;
+        clipsOnTrack.forEach(clip => {
+            const numChannels = clip.buffer.numberOfChannels;
+            for (let ch = 0; ch < numChannels; ch++) {
+                const data = clip.buffer.getChannelData(ch);
+                for (let i = 0; i < data.length; i++) {
+                    data[i] = Math.max(-1.0, Math.min(1.0, data[i] * normFactor));
+                }
+            }
+            clip.gain = 1.0;
+            if (typeof audioBufferToWav === 'function') {
+                const newBlob = audioBufferToWav(clip.buffer);
+                clip.blob = newBlob;
+                clip.blobUrl = URL.createObjectURL(newBlob);
+            }
+            clip.peaks = extractWaveformPeaks(clip.buffer, 400);
+        });
+
+        renderDawClips();
+        window._syncBottomDeckClipInspector?.();
+        const peakDbBefore = 20 * Math.log10(maxPeak);
+        const boostDb = (20 * Math.log10(normFactor)).toFixed(1);
+        showStudioToast(`Normalized Track "${track.name}": ${peakDbBefore.toFixed(1)} dBFS → 0.0 dBFS (+${boostDb} dB across ${clipsOnTrack.length} clip${clipsOnTrack.length === 1 ? '' : 's'})`);
+    };
+    window.normalizeTrackDAW = normalizeTrackDAW;
+
+    // ═════════════════════════════════════════════════════════════════
+    // MULTI-TRACK COMBINE & MERGE / STEM BOUNCE ENGINE (OFFLINE DSP)
+    // ═════════════════════════════════════════════════════════════════
+    const openMergeTracksModal = (initialTrackId = null) => {
+        const modal = document.getElementById('daw-merge-tracks-modal');
+        const checklist = document.getElementById('daw-merge-tracks-checklist');
+        const nameInput = document.getElementById('daw-merge-target-name');
+        if (!modal || !checklist) return;
+
+        const trackKeys = Object.keys(daw.tracks || {});
+        if (trackKeys.length === 0) {
+            showStudioToast('No tracks available in session to merge');
+            return;
+        }
+
+        const preselectId = initialTrackId || daw._activeFxTrackId || trackKeys[0];
+        if (nameInput) {
+            nameInput.value = `Merged Stems (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
+        }
+
+        checklist.innerHTML = trackKeys.map((key) => {
+            const tr = daw.tracks[key];
+            const clipCount = (daw.clips || []).filter(c => c.trackId === key).length;
+            const isChecked = (key === preselectId || (initialTrackId === null && clipCount > 0));
+            return `
+                <label style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; cursor: pointer; user-select: none;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" class="daw-merge-track-checkbox" data-track-id="${tr.id}" ${isChecked ? 'checked' : ''} style="accent-color: #34d399; width: 14px; height: 14px; cursor: pointer;">
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: ${tr.color || '#0a84ff'}; box-shadow: 0 0 6px ${tr.color || '#0a84ff'};"></span>
+                        <span style="font-size: 11.5px; font-weight: 700; color: #ffffff;">${escapeStudioHtml(tr.name)}</span>
+                    </div>
+                    <span style="font-size: 9.5px; color: rgba(255,255,255,0.5); font-family: monospace;">${clipCount} clip${clipCount === 1 ? '' : 's'} · ${(tr.channels || 'stereo').toUpperCase()}</span>
+                </label>
+            `;
+        }).join('');
+
+        modal.style.display = 'flex';
+    };
+    window.openMergeTracksModal = openMergeTracksModal;
+
+    const closeMergeTracksModal = () => {
+        const modal = document.getElementById('daw-merge-tracks-modal');
+        if (modal) modal.style.display = 'none';
+    };
+    window.closeMergeTracksModal = closeMergeTracksModal;
+
+    const executeMergeTracks = async () => {
+        const modal = document.getElementById('daw-merge-tracks-modal');
+        const checkboxes = modal?.querySelectorAll('.daw-merge-track-checkbox:checked');
+        if (!checkboxes || checkboxes.length === 0) {
+            showStudioToast('Select at least one track to combine / merge');
+            return;
+        }
+
+        const selectedTrackIds = Array.from(checkboxes).map(cb => cb.getAttribute('data-track-id')).filter(Boolean);
+        const clipsToMerge = (daw.clips || []).filter(c => selectedTrackIds.includes(c.trackId) && c.buffer && !c.muted);
+
+        if (clipsToMerge.length === 0) {
+            showStudioToast('Selected tracks do not contain any active audio clips');
+            return;
+        }
+
+        // Find session duration of the selected tracks
+        let maxTimeSec = 0;
+        clipsToMerge.forEach(c => {
+            const start = c.startOffset || 0;
+            const dur = (c.trimEnd || c.duration) - (c.trimStart || 0);
+            if (start + dur > maxTimeSec) maxTimeSec = start + dur;
+        });
+
+        if (maxTimeSec <= 0.05) {
+            showStudioToast('Invalid duration for track merge');
+            return;
+        }
+
+        const nameInput = document.getElementById('daw-merge-target-name');
+        const mergedTitle = (nameInput && nameInput.value.trim()) || 'Merged Audio Stem';
+        const muteSources = !!document.getElementById('daw-merge-mute-sources')?.checked;
+        const normalizeResult = !!document.getElementById('daw-merge-normalize-result')?.checked;
+
+        closeMergeTracksModal();
+        showStudioToast(`Merging ${selectedTrackIds.length} tracks (${clipsToMerge.length} clips) offline...`);
+
+        try {
+            const sampleRate = daw.audioCtx?.sampleRate || daw.sampleRate || 48000;
+            const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, Math.max(1, Math.ceil(maxTimeSec * sampleRate)), sampleRate);
+
+            // Connect and schedule each clip with track volume and pan
+            selectedTrackIds.forEach(trId => {
+                const track = daw.tracks[trId];
+                if (!track) return;
+                const trClips = clipsToMerge.filter(c => c.trackId === trId);
+                if (trClips.length === 0) return;
+
+                const trackGain = offlineCtx.createGain();
+                trackGain.gain.value = Number.isFinite(track.vol) ? track.vol : 1.0;
+
+                // Stereo Panning
+                let trackPanner = null;
+                if (offlineCtx.createStereoPanner) {
+                    trackPanner = offlineCtx.createStereoPanner();
+                    trackPanner.pan.value = Math.max(-1, Math.min(1, Number.isFinite(track.pan) ? track.pan : 0));
+                    trackGain.connect(trackPanner);
+                    trackPanner.connect(offlineCtx.destination);
+                } else {
+                    trackGain.connect(offlineCtx.destination);
+                }
+
+                trClips.forEach(clip => {
+                    const source = offlineCtx.createBufferSource();
+                    source.buffer = clip.buffer;
+
+                    const clipGain = offlineCtx.createGain();
+                    clipGain.gain.value = Number.isFinite(clip.gain) ? clip.gain : 1.0;
+                    source.connect(clipGain);
+                    clipGain.connect(trackGain);
+
+                    const start = Math.max(0, clip.startOffset || 0);
+                    const trimStart = Math.max(0, clip.trimStart || 0);
+                    const trimEnd = clip.trimEnd || clip.duration || clip.buffer.duration;
+                    const dur = Math.max(0.01, trimEnd - trimStart);
+
+                    source.start(start, trimStart, dur);
+                });
+            });
+
+            const renderedBuffer = await offlineCtx.startRendering();
+
+            // Optional normalization of merged buffer
+            if (normalizeResult) {
+                let mPeak = 0;
+                for (let ch = 0; ch < renderedBuffer.numberOfChannels; ch++) {
+                    const d = renderedBuffer.getChannelData(ch);
+                    for (let i = 0; i < d.length; i += 2) {
+                        const abs = Math.abs(d[i]);
+                        if (abs > mPeak) mPeak = abs;
+                    }
+                }
+                if (mPeak > 0.0001) {
+                    const factor = 1.0 / mPeak;
+                    for (let ch = 0; ch < renderedBuffer.numberOfChannels; ch++) {
+                        const d = renderedBuffer.getChannelData(ch);
+                        for (let i = 0; i < d.length; i++) {
+                            d[i] = Math.max(-1.0, Math.min(1.0, d[i] * factor));
+                        }
+                    }
+                }
+            }
+
+            // Create new Track for merged audio
+            pushDawHistory(`Merge Tracks into [${mergedTitle}]`);
+            const newTrackId = addNewEmptyTrack('audio');
+            if (daw.tracks[newTrackId]) {
+                daw.tracks[newTrackId].name = mergedTitle;
+                daw.tracks[newTrackId].channels = 'stereo';
+                daw.tracks[newTrackId].color = '#30d158';
+            }
+
+            const wavBlob = audioBufferToWav(renderedBuffer);
+            const newClipId = `clip_merged_${Date.now()}`;
+            const newClip = {
+                id: newClipId,
+                trackId: newTrackId,
+                name: `${mergedTitle}.wav`,
+                tag: 'STEM',
+                buffer: renderedBuffer,
+                blob: wavBlob,
+                blobUrl: URL.createObjectURL(wavBlob),
+                startOffset: 0,
+                trimStart: 0,
+                trimEnd: maxTimeSec,
+                duration: maxTimeSec,
+                color: '#30d158',
+                fadeIn: 0,
+                fadeOut: 0,
+                gain: 1.0,
+                muted: false,
+                peaks: extractWaveformPeaks(renderedBuffer, 400)
+            };
+
+            daw.clips.push(newClip);
+            daw.selectedClipId = newClipId;
+            if (!daw.selectedClipIds) daw.selectedClipIds = new Set();
+            daw.selectedClipIds.clear();
+            daw.selectedClipIds.add(newClipId);
+
+            // Mute source tracks if requested
+            if (muteSources) {
+                selectedTrackIds.forEach(id => {
+                    if (daw.tracks[id]) daw.tracks[id].muted = true;
+                });
+            }
+
+            recalculateDawDuration();
+            renderDawTracks();
+            renderDawClips();
+            renderDawRuler();
+            if (typeof renderMixerStrips === 'function') renderMixerStrips();
+            if (typeof syncActiveTrackToDeck === 'function') syncActiveTrackToDeck();
+
+            showStudioToast(`Successfully combined ${selectedTrackIds.length} tracks into "${mergedTitle}"!`);
+        } catch (mergeErr) {
+            console.error('[DAW Merge] Offline render error:', mergeErr);
+            showStudioToast(`Merge failed: ${mergeErr.message}`);
+        }
+    };
+    window.executeMergeTracks = executeMergeTracks;
+
+    // Duplicate Track along with all its clips
+    const duplicateTrackDAW = (trackId) => {
+        const srcTrack = daw.tracks && daw.tracks[trackId];
+        if (!srcTrack) return;
+        pushDawHistory(`Duplicate Track [${srcTrack.name}]`);
+        const count = Object.keys(daw.tracks).length;
+        const newTrackId = `track_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        daw.tracks[newTrackId] = JSON.parse(JSON.stringify(srcTrack));
+        daw.tracks[newTrackId].id = newTrackId;
+        daw.tracks[newTrackId].name = `${srcTrack.name} (Copy)`;
+
+        // Clone all clips on source track
+        const clipsOnSrc = (daw.clips || []).filter(c => c.trackId === trackId);
+        clipsOnSrc.forEach(orig => {
+            const copyClip = {
+                ...orig,
+                id: `clip_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                trackId: newTrackId,
+                name: `${orig.name} (Copy)`
+            };
+            daw.clips.push(copyClip);
+        });
+
+        recalculateDawDuration();
+        renderDawTracks();
+        renderDawClips();
+        renderDawRuler();
+        if (typeof renderMixerStrips === 'function') renderMixerStrips();
+        if (typeof syncActiveTrackToDeck === 'function') syncActiveTrackToDeck();
+        showStudioToast(`Duplicated Track "${srcTrack.name}" with ${clipsOnSrc.length} clip(s)`);
+    };
+    window.duplicateTrackDAW = duplicateTrackDAW;
 
     // Offline DSP Time Stretch & Pitch Shift Engine
     const processAudioBufferTimePitch = async (sourceBuffer, mode, semitones, stretchRatio) => {
@@ -13353,14 +13718,30 @@ export async function initStandaloneDaw() {
             renderDawTracks();
             renderDawClips();
         });
+        document.getElementById('daw-menu-tracks-normalize')?.addEventListener('click', () => {
+            closeAllMenus();
+            const targetId = daw._activeFxTrackId || (daw.tracks && Object.keys(daw.tracks)[0]);
+            normalizeTrackDAW(targetId);
+        });
+
+        document.getElementById('daw-menu-tracks-merge')?.addEventListener('click', () => {
+            closeAllMenus();
+            const targetId = daw._activeFxTrackId || (daw.tracks && Object.keys(daw.tracks)[0]);
+            openMergeTracksModal(targetId);
+        });
 
         // Waveform & Sound File Color Presentation Engine
         const updateWaveformColorUI = () => {
             const isColor = (daw.waveformColorMode !== 'mono');
-            const colorCheck = document.getElementById('daw-menu-waveform-color-check');
-            const monoCheck = document.getElementById('daw-menu-waveform-mono-check');
-            if (colorCheck) colorCheck.style.display = isColor ? 'inline' : 'none';
-            if (monoCheck) monoCheck.style.display = !isColor ? 'inline' : 'none';
+            const colorCheck1 = document.getElementById('daw-menu-waveform-color-check');
+            const monoCheck1 = document.getElementById('daw-menu-waveform-mono-check');
+            const colorCheck2 = document.getElementById('daw-settings-waveform-color-check');
+            const monoCheck2 = document.getElementById('daw-settings-waveform-mono-check');
+
+            if (colorCheck1) colorCheck1.style.display = isColor ? 'inline' : 'none';
+            if (colorCheck2) colorCheck2.style.display = isColor ? 'inline' : 'none';
+            if (monoCheck1) monoCheck1.style.display = !isColor ? 'inline' : 'none';
+            if (monoCheck2) monoCheck2.style.display = !isColor ? 'inline' : 'none';
 
             const toolbarBtn = document.getElementById('timeline-wave-color-btn');
             const toolbarLbl = document.getElementById('timeline-wave-color-label');
@@ -13422,14 +13803,24 @@ export async function initStandaloneDaw() {
                 localStorage.setItem('localfilm_studio_theme', themeName);
             } catch (e) {}
 
-            const obsCheck = document.getElementById('daw-theme-obsidian-check');
-            const monoCheck = document.getElementById('daw-theme-monochrome-check');
-            const monoBwCheck = document.getElementById('daw-theme-monochrome-bw-check');
-            const matCheck = document.getElementById('daw-theme-matrix-check');
-            if (obsCheck) obsCheck.style.display = themeName === 'obsidian' ? 'inline' : 'none';
-            if (monoCheck) monoCheck.style.display = (themeName === 'monochrome') ? 'inline' : 'none';
-            if (monoBwCheck) monoBwCheck.style.display = (themeName === 'monochrome-bw') ? 'inline' : 'none';
-            if (matCheck) matCheck.style.display = themeName === 'matrix' ? 'inline' : 'none';
+            const obsCheck1 = document.getElementById('daw-theme-obsidian-check');
+            const monoCheck1 = document.getElementById('daw-theme-monochrome-check');
+            const monoBwCheck1 = document.getElementById('daw-theme-monochrome-bw-check');
+            const matCheck1 = document.getElementById('daw-theme-matrix-check');
+
+            const obsCheck2 = document.getElementById('daw-settings-theme-obsidian-check');
+            const monoCheck2 = document.getElementById('daw-settings-theme-monochrome-check');
+            const monoBwCheck2 = document.getElementById('daw-settings-theme-monochrome-bw-check');
+            const matCheck2 = document.getElementById('daw-settings-theme-matrix-check');
+
+            if (obsCheck1) obsCheck1.style.display = themeName === 'obsidian' ? 'inline' : 'none';
+            if (obsCheck2) obsCheck2.style.display = themeName === 'obsidian' ? 'inline' : 'none';
+            if (monoCheck1) monoCheck1.style.display = (themeName === 'monochrome') ? 'inline' : 'none';
+            if (monoCheck2) monoCheck2.style.display = (themeName === 'monochrome') ? 'inline' : 'none';
+            if (monoBwCheck1) monoBwCheck1.style.display = (themeName === 'monochrome-bw') ? 'inline' : 'none';
+            if (monoBwCheck2) monoBwCheck2.style.display = (themeName === 'monochrome-bw') ? 'inline' : 'none';
+            if (matCheck1) matCheck1.style.display = themeName === 'matrix' ? 'inline' : 'none';
+            if (matCheck2) matCheck2.style.display = themeName === 'matrix' ? 'inline' : 'none';
 
             updateWaveformColorUI();
             renderDawClips();
@@ -13913,22 +14304,33 @@ export async function initStandaloneDaw() {
         const applyLayoutMode = (mode) => {
             daw.layoutMode = mode;
             const tag = document.getElementById('daw-layout-status-tag');
-            const stdCheck = document.getElementById('daw-menu-layout-standard-check');
-            const editCheck = document.getElementById('daw-menu-layout-editing-check');
-            const canvasCheck = document.getElementById('daw-menu-layout-canvas-check');
+            const stdCheck1 = document.getElementById('daw-menu-layout-standard-check');
+            const editCheck1 = document.getElementById('daw-menu-layout-editing-check');
+            const canvasCheck1 = document.getElementById('daw-menu-layout-canvas-check');
+
+            const stdCheck2 = document.getElementById('daw-settings-layout-standard-check');
+            const editCheck2 = document.getElementById('daw-settings-layout-editing-check');
+            const canvasCheck2 = document.getElementById('daw-settings-layout-canvas-check');
+
             const sidebar = document.getElementById('daw-track-headers-sidebar');
 
             if (mode === 'canvas') {
                 if (tag) tag.textContent = 'MAXIMISED CANVAS';
-                if (stdCheck) stdCheck.style.display = 'none';
-                if (editCheck) editCheck.style.display = 'none';
-                if (canvasCheck) canvasCheck.style.display = 'inline';
+                if (stdCheck1) stdCheck1.style.display = 'none';
+                if (stdCheck2) stdCheck2.style.display = 'none';
+                if (editCheck1) editCheck1.style.display = 'none';
+                if (editCheck2) editCheck2.style.display = 'none';
+                if (canvasCheck1) canvasCheck1.style.display = 'inline';
+                if (canvasCheck2) canvasCheck2.style.display = 'inline';
                 toggleSidebarCollapse(true);
             } else if (mode === 'editing') {
                 if (tag) tag.textContent = 'EDITING FOCUS';
-                if (stdCheck) stdCheck.style.display = 'none';
-                if (editCheck) editCheck.style.display = 'inline';
-                if (canvasCheck) canvasCheck.style.display = 'none';
+                if (stdCheck1) stdCheck1.style.display = 'none';
+                if (stdCheck2) stdCheck2.style.display = 'none';
+                if (editCheck1) editCheck1.style.display = 'inline';
+                if (editCheck2) editCheck2.style.display = 'inline';
+                if (canvasCheck1) canvasCheck1.style.display = 'none';
+                if (canvasCheck2) canvasCheck2.style.display = 'none';
                 if (sidebar) {
                     sidebar.classList.remove('daw-track-sidebar-collapsed');
                     sidebar.style.width = '140px';
@@ -13937,9 +14339,12 @@ export async function initStandaloneDaw() {
                 }
             } else {
                 if (tag) tag.textContent = 'STUDIO MODE';
-                if (stdCheck) stdCheck.style.display = 'inline';
-                if (editCheck) editCheck.style.display = 'none';
-                if (canvasCheck) canvasCheck.style.display = 'none';
+                if (stdCheck1) stdCheck1.style.display = 'inline';
+                if (stdCheck2) stdCheck2.style.display = 'inline';
+                if (editCheck1) editCheck1.style.display = 'none';
+                if (editCheck2) editCheck2.style.display = 'none';
+                if (canvasCheck1) canvasCheck1.style.display = 'none';
+                if (canvasCheck2) canvasCheck2.style.display = 'none';
                 if (sidebar) {
                     sidebar.classList.remove('daw-track-sidebar-collapsed');
                     sidebar.style.width = '240px';
@@ -13953,10 +14358,15 @@ export async function initStandaloneDaw() {
 
         // Wire View Dropdown Actions
         const updateWaveformMenuChecks = () => {
-            const realCheck = document.getElementById('daw-menu-waveform-realistic-check');
-            const barsCheck = document.getElementById('daw-menu-waveform-bars-check');
-            if (realCheck) realCheck.style.display = (daw.waveformStyle !== 'bars') ? 'inline' : 'none';
-            if (barsCheck) barsCheck.style.display = (daw.waveformStyle === 'bars') ? 'inline' : 'none';
+            const realCheck1 = document.getElementById('daw-menu-waveform-realistic-check');
+            const barsCheck1 = document.getElementById('daw-menu-waveform-bars-check');
+            const realCheck2 = document.getElementById('daw-settings-waveform-realistic-check');
+            const barsCheck2 = document.getElementById('daw-settings-waveform-bars-check');
+            const isReal = (daw.waveformStyle !== 'bars');
+            if (realCheck1) realCheck1.style.display = isReal ? 'inline' : 'none';
+            if (realCheck2) realCheck2.style.display = isReal ? 'inline' : 'none';
+            if (barsCheck1) barsCheck1.style.display = !isReal ? 'inline' : 'none';
+            if (barsCheck2) barsCheck2.style.display = !isReal ? 'inline' : 'none';
         };
 
         document.getElementById('daw-menu-view-waveform-realistic')?.addEventListener('click', () => {
@@ -14216,6 +14626,226 @@ export async function initStandaloneDaw() {
 
         tabVisionBtn?.addEventListener('click', () => switchAboutTab('vision'));
         tabChangelogBtn?.addEventListener('click', () => switchAboutTab('changelog'));
+
+        // ==========================================
+        // 7. MERGE TRACKS MODAL DIALOG ENGINE
+        // ==========================================
+        document.getElementById('daw-merge-tracks-close-btn')?.addEventListener('click', closeMergeTracksModal);
+        document.getElementById('daw-merge-tracks-cancel-btn')?.addEventListener('click', closeMergeTracksModal);
+        document.getElementById('daw-merge-tracks-confirm-btn')?.addEventListener('click', executeMergeTracks);
+        document.getElementById('daw-merge-select-all')?.addEventListener('click', () => {
+            document.querySelectorAll('.daw-merge-track-checkbox').forEach(cb => cb.checked = true);
+        });
+        document.getElementById('daw-merge-deselect-all')?.addEventListener('click', () => {
+            document.querySelectorAll('.daw-merge-track-checkbox').forEach(cb => cb.checked = false);
+        });
+        document.getElementById('daw-merge-tracks-modal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'daw-merge-tracks-modal') closeMergeTracksModal();
+        });
+
+        // ==========================================
+        // 8. LOCAL AUTO-SAVE ENGINE & INTERVAL MANAGER
+        // ==========================================
+        let _dawAutoSaveIntervalTimer = null;
+        let _currentAutoSaveIntervalMs = 60000; // default 1 minute
+        try {
+            const savedInterval = localStorage.getItem('localdaw_autosave_interval');
+            if (savedInterval !== null) {
+                _currentAutoSaveIntervalMs = parseInt(savedInterval, 10);
+            }
+        } catch (e) {}
+
+        const updateAutoSaveUI = () => {
+            const pill = document.getElementById('daw-autosave-indicator-pill');
+            const check30s = document.getElementById('daw-settings-autosave-30s-check');
+            const check1m = document.getElementById('daw-settings-autosave-1m-check');
+            const check5m = document.getElementById('daw-settings-autosave-5m-check');
+            const checkOff = document.getElementById('daw-settings-autosave-off-check');
+
+            if (check30s) check30s.style.display = (_currentAutoSaveIntervalMs === 30000) ? 'inline' : 'none';
+            if (check1m) check1m.style.display = (_currentAutoSaveIntervalMs === 60000) ? 'inline' : 'none';
+            if (check5m) check5m.style.display = (_currentAutoSaveIntervalMs === 300000) ? 'inline' : 'none';
+            if (checkOff) checkOff.style.display = (_currentAutoSaveIntervalMs === 0) ? 'inline' : 'none';
+
+            if (pill) {
+                if (_currentAutoSaveIntervalMs === 0) {
+                    pill.innerHTML = '<span style="width: 5px; height: 5px; border-radius: 50%; background: #8e8e93; display: inline-block;"></span> <span>Auto-Save: Off</span>';
+                    pill.style.borderColor = 'rgba(255,255,255,0.15)';
+                    pill.style.color = 'rgba(255,255,255,0.45)';
+                    pill.title = 'Local Auto-Save is currently disabled';
+                } else {
+                    const label = _currentAutoSaveIntervalMs === 30000 ? '30s' : (_currentAutoSaveIntervalMs === 300000 ? '5m' : '1m');
+                    pill.innerHTML = `<span style="width: 5px; height: 5px; border-radius: 50%; background: #34d399; box-shadow: 0 0 6px #34d399; display: inline-block;"></span> <span>Auto-Save: ${label}</span>`;
+                    pill.style.borderColor = 'rgba(52, 211, 153, 0.3)';
+                    pill.style.color = '#34d399';
+                }
+            }
+        };
+
+        const setAutoSaveInterval = (intervalMs, showToast = true) => {
+            _currentAutoSaveIntervalMs = intervalMs;
+            try {
+                localStorage.setItem('localdaw_autosave_interval', String(intervalMs));
+            } catch (e) {}
+
+            if (_dawAutoSaveIntervalTimer) {
+                clearInterval(_dawAutoSaveIntervalTimer);
+                _dawAutoSaveIntervalTimer = null;
+            }
+
+            if (intervalMs > 0) {
+                _dawAutoSaveIntervalTimer = setInterval(() => {
+                    if (typeof autoSaveDawSession === 'function') {
+                        autoSaveDawSession();
+                        const pill = document.getElementById('daw-autosave-indicator-pill');
+                        if (pill) {
+                            const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                            pill.title = `Last auto-saved locally at ${nowStr} (Click to save now)`;
+                        }
+                    }
+                }, intervalMs);
+            }
+
+            updateAutoSaveUI();
+            if (showToast) {
+                if (intervalMs === 0) {
+                    showStudioToast('Local Auto-Save: Disabled');
+                } else {
+                    const durStr = intervalMs === 30000 ? '30 seconds' : (intervalMs === 300000 ? '5 minutes' : '1 minute');
+                    showStudioToast(`Local Auto-Save Interval: Every ${durStr}`);
+                }
+            }
+        };
+
+        // Wire Auto-Save Interval Menu Options
+        document.getElementById('daw-menu-settings-autosave-30s')?.addEventListener('click', () => {
+            closeAllMenus();
+            setAutoSaveInterval(30000);
+        });
+        document.getElementById('daw-menu-settings-autosave-1m')?.addEventListener('click', () => {
+            closeAllMenus();
+            setAutoSaveInterval(60000);
+        });
+        document.getElementById('daw-menu-settings-autosave-5m')?.addEventListener('click', () => {
+            closeAllMenus();
+            setAutoSaveInterval(300000);
+        });
+        document.getElementById('daw-menu-settings-autosave-off')?.addEventListener('click', () => {
+            closeAllMenus();
+            setAutoSaveInterval(0);
+        });
+
+        // Wire Manual "Save Project to Local Library Now" & Indicator Pill
+        const performManualLocalSave = async () => {
+            if (typeof saveProjectToLibrary === 'function') {
+                saveProjectToLibrary();
+            } else if (typeof autoSaveDawSession === 'function') {
+                autoSaveDawSession();
+                showStudioToast('Project state saved to local storage');
+            }
+            const pill = document.getElementById('daw-autosave-indicator-pill');
+            if (pill) {
+                pill.innerHTML = '<span style="width: 5px; height: 5px; border-radius: 50%; background: #34d399; box-shadow: 0 0 10px #34d399; display: inline-block;"></span> <span style="color: #fff; font-weight: 700;">Saved Just Now!</span>';
+                setTimeout(() => { updateAutoSaveUI(); }, 2200);
+            }
+        };
+
+        document.getElementById('daw-menu-settings-save-now')?.addEventListener('click', () => {
+            closeAllMenus();
+            performManualLocalSave();
+        });
+
+        document.getElementById('daw-autosave-indicator-pill')?.addEventListener('click', () => {
+            performManualLocalSave();
+        });
+
+        document.getElementById('daw-menu-settings-restore-session')?.addEventListener('click', async () => {
+            closeAllMenus();
+            if (typeof restoreDawSessionFromStorage === 'function') {
+                const restored = await restoreDawSessionFromStorage();
+                if (restored) {
+                    showStudioToast('Restored last auto-saved session from local storage');
+                } else {
+                    showStudioToast('No prior auto-saved session found in local storage');
+                }
+            }
+        });
+
+        // Initialize Auto-Save Interval on boot
+        setAutoSaveInterval(_currentAutoSaveIntervalMs, false);
+
+        // ==========================================
+        // 9. CONSOLIDATED SETTINGS TOP MENU ACTIONS
+        // ==========================================
+        // Settings -> Workspace Layout
+        document.getElementById('daw-menu-settings-layout-standard')?.addEventListener('click', () => {
+            closeAllMenus();
+            applyLayoutMode('standard');
+        });
+        document.getElementById('daw-menu-settings-layout-editing')?.addEventListener('click', () => {
+            closeAllMenus();
+            applyLayoutMode('editing');
+        });
+        document.getElementById('daw-menu-settings-layout-canvas')?.addEventListener('click', () => {
+            closeAllMenus();
+            applyLayoutMode('canvas');
+        });
+
+        // Settings -> Cinematic Themes
+        document.getElementById('daw-menu-settings-theme-obsidian')?.addEventListener('click', () => {
+            closeAllMenus();
+            applyStudioTheme('obsidian', 'color');
+        });
+        document.getElementById('daw-menu-settings-theme-monochrome')?.addEventListener('click', () => {
+            closeAllMenus();
+            applyStudioTheme('monochrome', 'color');
+        });
+        document.getElementById('daw-menu-settings-theme-monochrome-bw')?.addEventListener('click', () => {
+            closeAllMenus();
+            applyStudioTheme('monochrome-bw', 'mono');
+        });
+        document.getElementById('daw-menu-settings-theme-matrix')?.addEventListener('click', () => {
+            closeAllMenus();
+            applyStudioTheme('matrix');
+        });
+
+        // Settings -> Waveform & Audio Presentation
+        document.getElementById('daw-menu-settings-waveform-realistic')?.addEventListener('click', () => {
+            closeAllMenus();
+            daw.waveformStyle = 'realistic';
+            updateWaveformMenuChecks();
+            renderDawClips();
+            showStudioToast('Waveform: Analog Detailed Curves (High Resolution)');
+        });
+        document.getElementById('daw-menu-settings-waveform-bars')?.addEventListener('click', () => {
+            closeAllMenus();
+            daw.waveformStyle = 'bars';
+            updateWaveformMenuChecks();
+            renderDawClips();
+            showStudioToast('Waveform: Studio Block Bars');
+        });
+        document.getElementById('daw-menu-settings-waveform-color')?.addEventListener('click', () => {
+            closeAllMenus();
+            toggleWaveformColorMode('color');
+        });
+        document.getElementById('daw-menu-settings-waveform-mono')?.addEventListener('click', () => {
+            closeAllMenus();
+            toggleWaveformColorMode('mono');
+        });
+
+        // Settings -> Workspace & Toolbar UX
+        document.getElementById('daw-menu-settings-reset-ui')?.addEventListener('click', () => {
+            closeAllMenus();
+            resetDawUiLayout();
+        });
+        document.getElementById('daw-menu-settings-customize-toolbar')?.addEventListener('click', () => {
+            closeAllMenus();
+            toggleToolbarCustomizePopover(true);
+        });
+        document.getElementById('daw-menu-settings-vu-meter')?.addEventListener('click', () => {
+            closeAllMenus();
+            toggleMasterVuWindow();
+        });
     };
     setupDawMenuBar();
 
@@ -16777,6 +17407,10 @@ export async function initStandaloneDaw() {
                     ctxMenu.appendChild(div);
                     return;
                 }
+                if (item.isCustom && typeof item.render === 'function') {
+                    item.render(ctxMenu, hideMenu);
+                    return;
+                }
                 const itEl = document.createElement('div');
                 itEl.className = 'daw-menu-item';
                 itEl.style.cssText = `padding: 6px 12px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; color: ${item.isDanger ? '#ff453a' : '#ffffff'}; font-size: 11.5px; font-weight: 700; transition: background 0.12s; user-select: none;`;
@@ -16802,7 +17436,7 @@ export async function initStandaloneDaw() {
             });
 
             ctxMenu.style.display = 'block';
-            const menuW = 220;
+            const menuW = 240;
             const menuH = ctxMenu.offsetHeight || 220;
             let left = e.clientX + 2;
             let top = e.clientY + 2;
@@ -16912,7 +17546,7 @@ export async function initStandaloneDaw() {
                 return;
             }
 
-            // Target 2: Track Header or Mixer Strip
+            // Target 2: Track Header or Mixer Strip (Left-Hand Track Area)
             const trackHeader = e.target.closest('.daw-track-header');
             const mixerStrip = e.target.closest('.daw-mixer-strip');
             const trHeaderEl = trackHeader || mixerStrip;
@@ -16928,7 +17562,120 @@ export async function initStandaloneDaw() {
                 syncActiveTrackToDeck();
                 if (typeof renderMixerStrips === 'function') renderMixerStrips();
 
+                const isArmed = (daw._recordTrackId === trId);
+
                 const items = [
+                    // Custom Color Palette Swatch Row
+                    {
+                        isCustom: true,
+                        render: (container, closeFn) => {
+                            const paletteWrap = document.createElement('div');
+                            paletteWrap.style.cssText = 'padding: 8px 12px 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.08);';
+                            
+                            const label = document.createElement('div');
+                            label.style.cssText = 'font-size: 8.5px; font-weight: 800; color: rgba(255,255,255,0.45); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 7px; display: flex; align-items: center; justify-content: space-between;';
+                            label.innerHTML = '<span>TRACK COLOR</span><span style="font-size: 8px; color: rgba(255,255,255,0.3); font-family: monospace;">HEX PALETTE</span>';
+                            paletteWrap.appendChild(label);
+
+                            const row = document.createElement('div');
+                            row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 6px;';
+                            
+                            const SWATCHES = ['#0a84ff', '#30d158', '#5e5ce6', '#ff9f0a', '#40c8e0', '#eb758a', '#8e8e93', '#bf5af2'];
+                            SWATCHES.forEach(col => {
+                                const dot = document.createElement('button');
+                                dot.type = 'button';
+                                const isCurrent = (track.color || '').toLowerCase() === col.toLowerCase();
+                                dot.style.cssText = `width: 19px; height: 19px; border-radius: 50%; background: ${col}; border: 2px solid ${isCurrent ? '#ffffff' : 'rgba(255,255,255,0.22)'}; cursor: pointer; padding: 0; box-shadow: ${isCurrent ? '0 0 10px ' + col : 'none'}; transition: transform 0.12s, border 0.12s; outline: none; flex-shrink: 0;`;
+                                dot.title = `Set Track Color: ${col}`;
+                                dot.addEventListener('mouseenter', () => { dot.style.transform = 'scale(1.25)'; });
+                                dot.addEventListener('mouseleave', () => { dot.style.transform = 'scale(1)'; });
+                                dot.addEventListener('click', (ev) => {
+                                    ev.stopPropagation();
+                                    pushDawHistory(`Change Color for Track [${track.name}]`);
+                                    track.color = col;
+                                    renderDawTracks();
+                                    renderDawClips();
+                                    if (typeof renderMixerStrips === 'function') renderMixerStrips();
+                                    if (typeof syncActiveTrackToDeck === 'function') syncActiveTrackToDeck();
+                                    closeFn();
+                                    showStudioToast(`Updated color for track "${track.name}"`);
+                                });
+                                row.appendChild(dot);
+                            });
+                            paletteWrap.appendChild(row);
+                            container.appendChild(paletteWrap);
+                        }
+                    },
+                    {
+                        label: 'Rename Track...',
+                        iconSvg: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
+                        onClick: () => {
+                            const newName = window.prompt(`Rename Track "${track.name}":`, track.name);
+                            if (newName && newName.trim() && newName.trim() !== track.name) {
+                                pushDawHistory(`Rename Track [${track.name}] to [${newName.trim()}]`);
+                                track.name = newName.trim();
+                                renderDawTracks();
+                                if (typeof renderMixerStrips === 'function') renderMixerStrips();
+                                if (typeof syncActiveTrackToDeck === 'function') syncActiveTrackToDeck();
+                                showStudioToast(`Renamed track to "${track.name}"`);
+                            }
+                        }
+                    },
+                    { isDivider: true },
+                    {
+                        label: 'Peak Normalize Track (0 dBFS)',
+                        iconSvg: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+                        onClick: () => normalizeTrackDAW(trId)
+                    },
+                    {
+                        label: 'Combine / Merge Tracks...',
+                        iconSvg: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.12 15.88"/><path d="M14.47 14.48L20 20"/><path d="M8.12 8.12L12 12"/>',
+                        onClick: () => openMergeTracksModal(trId)
+                    },
+                    {
+                        label: 'Duplicate Track',
+                        shortcut: 'Ctrl+D',
+                        iconSvg: '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+                        onClick: () => duplicateTrackDAW(trId)
+                    },
+                    { isDivider: true },
+                    {
+                        label: isArmed ? 'Disarm Recording' : 'Arm Track for Recording',
+                        shortcut: 'R',
+                        iconSvg: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3" fill="currentColor"/>',
+                        onClick: () => {
+                            daw._recordTrackId = isArmed ? null : trId;
+                            renderDawTracks();
+                            showStudioToast(daw._recordTrackId === trId ? `Track "${track.name}" Armed` : `Track "${track.name}" Disarmed`);
+                        }
+                    },
+                    {
+                        label: track.solo ? 'Unsolo Track' : 'Solo Track',
+                        shortcut: 'S',
+                        iconSvg: '<path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>',
+                        onClick: () => {
+                            track.solo = !track.solo;
+                            renderDawTracks();
+                            renderDawClips();
+                            if (typeof renderMixerStrips === 'function') renderMixerStrips();
+                            showStudioToast(`Track "${track.name}" ${track.solo ? 'Soloed' : 'Unsoloed'}`);
+                        }
+                    },
+                    {
+                        label: track.muted ? 'Unmute Track' : 'Mute Track',
+                        shortcut: 'M',
+                        iconSvg: track.muted 
+                            ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>' 
+                            : '<path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>',
+                        onClick: () => {
+                            track.muted = !track.muted;
+                            renderDawTracks();
+                            renderDawClips();
+                            if (typeof renderMixerStrips === 'function') renderMixerStrips();
+                            showStudioToast(`Track "${track.name}" ${track.muted ? 'Muted' : 'Unmuted'}`);
+                        }
+                    },
+                    { isDivider: true },
                     {
                         label: 'Export Track (WAV)...',
                         shortcut: 'Bounce',
@@ -16950,9 +17697,8 @@ export async function initStandaloneDaw() {
                         iconSvg: '<polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/>',
                         onClick: () => exportAllStemsZipDAW()
                     },
-                    { isDivider: true },
                     {
-                        label: 'Track Properties & Color...',
+                        label: 'Track Properties & Settings...',
                         iconSvg: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
                         onClick: () => {
                             if (typeof openTrackPropertiesModal === 'function') openTrackPropertiesModal(trId);

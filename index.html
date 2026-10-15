@@ -295,6 +295,14 @@
                                     <span>Toggle Automation Curves</span>
                                     <span class="daw-menu-shortcut">A</span>
                                 </div>
+                                <div class="daw-menu-divider"></div>
+                                <div class="daw-menu-section-header">AUDIO DSP &amp; STEM MERGE</div>
+                                <div class="daw-menu-item" id="daw-menu-tracks-normalize">
+                                    <span>Peak Normalize Selected Track (0 dBFS)</span>
+                                </div>
+                                <div class="daw-menu-item" id="daw-menu-tracks-merge">
+                                    <span>Combine / Merge Tracks into One Track...</span>
+                                </div>
                             </div>
                         </div>
 
@@ -494,6 +502,113 @@
 
                         <span style="color: rgba(255,255,255,0.16); font-size: 10px; font-weight: 300; padding: 0 1px; user-select: none;">|</span>
 
+                        <div class="daw-menu-group" id="daw-menu-group-settings" style="position: relative;">
+                            <button type="button" class="daw-menu-bar-btn" data-menu="settings" style="background: none; border: none; color: inherit; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; transition: background 0.12s, color 0.12s;">
+                                SETTINGS <span style="font-size: 7.5px; opacity: 0.5;">▾</span>
+                            </button>
+                            <div id="daw-menu-dropdown-settings" class="daw-menu-dropdown" style="display: none; position: absolute; top: calc(100% + 2px); left: 0; background: #0c0f17; border: 1px solid rgba(255,255,255,0.16); border-radius: 6px; min-width: 270px; box-shadow: 0 16px 36px rgba(0,0,0,0.95); z-index: 3100; padding: 4px 0;">
+                                <div class="daw-menu-section-header">STUDIO WORKSPACE LAYOUT</div>
+                                <div class="daw-menu-item" id="daw-menu-settings-layout-standard" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
+                                    <span>Layout: Standard Studio</span>
+                                    <span id="daw-settings-layout-standard-check" style="color: #ffffff;">✓</span>
+                                </div>
+                                <div class="daw-menu-item" id="daw-menu-settings-layout-editing" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
+                                    <span>Layout: Editing Focus</span>
+                                    <span id="daw-settings-layout-editing-check" style="display: none; color: #ffffff;">✓</span>
+                                </div>
+                                <div class="daw-menu-item" id="daw-menu-settings-layout-canvas" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
+                                    <span>Layout: Maximised Canvas</span>
+                                    <span id="daw-settings-layout-canvas-check" style="display: none; color: #ffffff;">✓</span>
+                                </div>
+
+                                <div class="daw-menu-divider"></div>
+                                <div class="daw-menu-section-header">CINEMATIC STUDIO THEMES</div>
+                                <div class="daw-menu-item" id="daw-menu-settings-theme-obsidian" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
+                                    <span>Theme: Obsidian Dark (Default)</span>
+                                    <span id="daw-settings-theme-obsidian-check" style="color: #ffffff;">✓</span>
+                                </div>
+                                <div class="daw-menu-item" id="daw-menu-settings-theme-monochrome" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
+                                    <span>Theme: Cinema Monochrome (Color Waves)</span>
+                                    <span id="daw-settings-theme-monochrome-check" style="display: none; color: #ffffff;">✓</span>
+                                </div>
+                                <div class="daw-menu-item" id="daw-menu-settings-theme-monochrome-bw" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
+                                    <span>Theme: Cinema Pure B&amp;W (Full Monochrome)</span>
+                                    <span id="daw-settings-theme-monochrome-bw-check" style="display: none; color: #ffffff;">✓</span>
+                                </div>
+                                <div class="daw-menu-item" id="daw-menu-settings-theme-matrix" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; font-weight: 600; transition: background 0.12s;">
+                                    <span>Theme: Matrix Phosphor Green</span>
+                                    <span id="daw-settings-theme-matrix-check" style="display: none; color: #ffffff;">✓</span>
+                                </div>
+
+                                <div class="daw-menu-divider"></div>
+                                <div class="daw-menu-section-header">WAVEFORM &amp; AUDIO PRESENTATION</div>
+                                <div class="daw-menu-item" id="daw-menu-settings-waveform-realistic" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; font-weight: 600; transition: background 0.12s;">
+                                    <span>Waveform: Analog Detailed Curves</span>
+                                    <span id="daw-settings-waveform-realistic-check" style="color: #ffffff;">✓</span>
+                                </div>
+                                <div class="daw-menu-item" id="daw-menu-settings-waveform-bars" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
+                                    <span>Waveform: Studio Block Bars</span>
+                                    <span id="daw-settings-waveform-bars-check" style="display: none; color: #ffffff;">✓</span>
+                                </div>
+                                <div class="daw-menu-item" id="daw-menu-settings-waveform-color" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; font-weight: 600; transition: background 0.12s;">
+                                    <span>Sound Files: Display in Vivid Colour</span>
+                                    <span id="daw-settings-waveform-color-check" style="color: #ffffff;">✓</span>
+                                </div>
+                                <div class="daw-menu-item" id="daw-menu-settings-waveform-mono" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
+                                    <span>Sound Files: Monochrome B&amp;W Waves</span>
+                                    <span id="daw-settings-waveform-mono-check" style="display: none; color: #ffffff;">✓</span>
+                                </div>
+
+                                <div class="daw-menu-divider"></div>
+                                <div class="daw-menu-section-header">LOCAL AUTO-SAVE ENGINE</div>
+                                <div class="daw-menu-item" id="daw-menu-settings-autosave-30s" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
+                                    <span>Auto-Save: Every 30 Seconds</span>
+                                    <span id="daw-settings-autosave-30s-check" style="display: none; color: #34d399;">✓</span>
+                                </div>
+                                <div class="daw-menu-item" id="daw-menu-settings-autosave-1m" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
+                                    <span>Auto-Save: Every 1 Minute (Default)</span>
+                                    <span id="daw-settings-autosave-1m-check" style="color: #34d399;">✓</span>
+                                </div>
+                                <div class="daw-menu-item" id="daw-menu-settings-autosave-5m" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
+                                    <span>Auto-Save: Every 5 Minutes</span>
+                                    <span id="daw-settings-autosave-5m-check" style="display: none; color: #34d399;">✓</span>
+                                </div>
+                                <div class="daw-menu-item" id="daw-menu-settings-autosave-off" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
+                                    <span>Auto-Save: Disabled / Off</span>
+                                    <span id="daw-settings-autosave-off-check" style="display: none; color: #34d399;">✓</span>
+                                </div>
+                                <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 3px 0;"></div>
+                                <div class="daw-menu-item" id="daw-menu-settings-save-now" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #34d399; font-size: 11.5px; font-weight: 700; transition: background 0.12s;">
+                                    <span>Save Project to Local Library Now</span>
+                                    <span class="daw-menu-shortcut">Ctrl+S</span>
+                                </div>
+                                <div class="daw-menu-item" id="daw-menu-settings-restore-session" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
+                                    <span>Restore Last Auto-Saved Session...</span>
+                                </div>
+
+                                <div class="daw-menu-divider"></div>
+                                <div class="daw-menu-section-header">WORKSPACE &amp; TOOLBAR UX</div>
+                                <div class="daw-menu-item" id="daw-menu-settings-reset-ui" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; font-weight: 600; transition: background 0.12s;">
+                                    <span>Reset UI &amp; Window Layout</span>
+                                    <span class="daw-menu-shortcut">Alt+R</span>
+                                </div>
+                                <div class="daw-menu-item" id="daw-menu-settings-customize-toolbar" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; font-weight: 600; transition: background 0.12s;">
+                                    <span>Configure Toolbar Functions...</span>
+                                    <span class="daw-menu-shortcut">T</span>
+                                </div>
+                                <div class="daw-menu-item" id="daw-menu-settings-vu-meter" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; font-weight: 600; transition: background 0.12s;">
+                                    <span>Master VU Meter Window (Show / Hide)</span>
+                                    <span class="daw-menu-shortcut">F8</span>
+                                </div>
+                                <div class="daw-menu-item" id="daw-menu-settings-vu-dock" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
+                                    <span id="daw-settings-vu-dock-label">Dock VU Meter to Sidebar</span>
+                                    <span id="daw-settings-vu-dock-check" style="color: #ffffff;">✓</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <span style="color: rgba(255,255,255,0.16); font-size: 10px; font-weight: 300; padding: 0 1px; user-select: none;">|</span>
+
                         <div class="daw-menu-group" style="position: relative;">
                             <button type="button" class="daw-menu-bar-btn" data-menu="help" style="background: none; border: none; color: inherit; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; transition: background 0.12s, color 0.12s;">
                                 HELP <span style="font-size: 7.5px; opacity: 0.5;">▾</span>
@@ -501,7 +616,7 @@
                             <div id="daw-menu-dropdown-help" class="daw-menu-dropdown" style="display: none; position: absolute; top: calc(100% + 2px); left: 0; background: #0c0f17; border: 1px solid rgba(255,255,255,0.14); border-radius: 6px; min-width: 250px; box-shadow: 0 16px 36px rgba(0,0,0,0.92); z-index: 3100; padding: 4px 0;">
                                 <div class="daw-menu-item" id="daw-menu-help-welcome" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; font-weight: 600; transition: background 0.12s;">
                                     <span>Welcome Guide &amp; VIP Recognition...</span>
-                                    <span style="font-size: 9px; color: #e5e7eb; font-family: monospace; font-weight: 700; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); padding: 1px 5px; border-radius: 3px;">v1.8.40</span>
+                                    <span style="font-size: 9px; color: #e5e7eb; font-family: monospace; font-weight: 700; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); padding: 1px 5px; border-radius: 3px;">v1.8.41</span>
                                 </div>
                                 <div class="daw-menu-item" id="daw-menu-help-shortcuts" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; font-weight: 600; transition: background 0.12s;">
                                     <span>Keyboard Shortcuts Guide...</span>
@@ -520,14 +635,18 @@
                                         <img src="/logo.png" alt="LocalFilm Ireland Logo" title="LocalFilm Ireland" style="height: 15px; width: auto; object-fit: contain; filter: drop-shadow(0 1px 4px rgba(0,0,0,0.6));" onerror="this.onerror=null; this.src='/logo.png';" />
                                         About Alan Joyce &amp; LocalFilm
                                     </span>
-                                    <span style="font-size: 9px; color: #e5e7eb; font-family: monospace; font-weight: 700; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); padding: 1px 5px; border-radius: 3px;">v1.8.40</span>
+                                    <span style="font-size: 9px; color: #e5e7eb; font-family: monospace; font-weight: 700; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); padding: 1px 5px; border-radius: 3px;">v1.8.41</span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Right Quick Layout Indicator, Release Badge & Menubar Close Button -->
                         <div style="margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 10px; color: rgba(255,255,255,0.5);">
-                            <span style="padding: 1px 6px; background: rgba(255,255,255,0.08); color: #e5e7eb; border-radius: 3px; border: 1px solid rgba(255,255,255,0.18); font-family: monospace; font-size: 9.5px; font-weight: 700;">v1.8.40</span>
+                            <span id="daw-autosave-indicator-pill" style="padding: 1px 6px; background: rgba(52, 211, 153, 0.1); color: #34d399; border-radius: 3px; border: 1px solid rgba(52, 211, 153, 0.25); font-family: monospace; font-size: 9px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                                <span style="width: 5px; height: 5px; border-radius: 50%; background: #34d399; box-shadow: 0 0 5px #34d399;"></span>
+                                AUTOSAVE 1M
+                            </span>
+                            <span style="padding: 1px 6px; background: rgba(255,255,255,0.08); color: #e5e7eb; border-radius: 3px; border: 1px solid rgba(255,255,255,0.18); font-family: monospace; font-size: 9.5px; font-weight: 700;">v1.8.41</span>
                             <span id="daw-layout-status-tag" style="padding: 1px 6px; background: rgba(255,255,255,0.06); border-radius: 3px; border: 1px solid rgba(255,255,255,0.1); font-weight: 700; letter-spacing: 0.5px;">STUDIO MODE</span>
                             <button id="daw-menubar-close-btn" title="Close DAW &amp; Return to LocalFilm.online" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); width: 22px; height: 22px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s; margin-left: 2px;" onmouseover="this.style.background='rgba(255,69,58,0.2)'; this.style.borderColor='#ff453a'; this.style.color='#ff453a';" onmouseout="this.style.background='rgba(255,255,255,0.04)'; this.style.borderColor='rgba(255,255,255,0.1)'; this.style.color='rgba(255,255,255,0.7)';">
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -737,6 +856,67 @@
                                 <button id="daw-add-tracks-confirm-btn" type="button" style="background: linear-gradient(135deg, #30d158 0%, #059669 100%); border: 1px solid rgba(48, 209, 88,0.5); color: #ffffff; padding: 8px 22px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer; box-shadow: 0 0 16px rgba(48, 209, 88,0.35); display: inline-flex; align-items: center; gap: 6px;">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
                                     Add Tracks to Session
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- COMBINE & MERGE TRACKS MODAL (Offline Bounce & Stem Summing Engine) -->
+                    <div id="daw-merge-tracks-modal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.88); backdrop-filter: blur(16px); z-index: 99999; display: none; align-items: center; justify-content: center; padding: 20px;">
+                        <div style="background: #090c14; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 18px; width: 100%; max-width: 580px; box-shadow: 0 32px 80px rgba(0,0,0,0.95), 0 0 24px rgba(255, 255, 255, 0.1); display: flex; flex-direction: column; overflow: hidden; position: relative;">
+                            <!-- Header -->
+                            <div style="padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center;">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg>
+                                    </div>
+                                    <div>
+                                        <h4 style="font-size: 14px; font-weight: 800; color: #ffffff; margin: 0; letter-spacing: 0.3px;">Combine &amp; Merge Tracks into One Track</h4>
+                                        <span style="font-size: 10.5px; color: rgba(255,255,255,0.55);">Sum, bounce and consolidate multiple selected audio tracks into a single unified stereo stem</span>
+                                    </div>
+                                </div>
+                                <button id="daw-merge-tracks-close-btn" style="background: none; border: none; color: rgba(255,255,255,0.5); font-size: 20px; cursor: pointer; line-height: 1; padding: 2px 6px;">&times;</button>
+                            </div>
+
+                            <!-- Body -->
+                            <div style="padding: 18px 20px; overflow-y: auto; max-height: calc(85vh - 130px); display: flex; flex-direction: column; gap: 16px;">
+                                <div>
+                                    <label style="display: block; font-size: 9.5px; font-weight: 800; color: rgba(255,255,255,0.6); text-transform: uppercase; margin-bottom: 5px;">Merged Track Name</label>
+                                    <input type="text" id="daw-merge-target-name" value="Merged Stems Mix" style="width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 8px 12px; color: #ffffff; font-size: 12.5px; font-weight: 700; outline: none;">
+                                </div>
+
+                                <div>
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                                        <label style="font-size: 9.5px; font-weight: 800; color: rgba(255,255,255,0.6); text-transform: uppercase;">Select Tracks to Combine</label>
+                                        <div style="display: flex; gap: 8px;">
+                                            <button type="button" id="daw-merge-select-all" style="background: none; border: none; color: #ffffff; font-size: 10px; cursor: pointer; text-decoration: underline; padding: 0;">Select All</button>
+                                            <span style="color: rgba(255,255,255,0.2);">|</span>
+                                            <button type="button" id="daw-merge-deselect-all" style="background: none; border: none; color: rgba(255,255,255,0.5); font-size: 10px; cursor: pointer; text-decoration: underline; padding: 0;">Deselect All</button>
+                                        </div>
+                                    </div>
+                                    <div id="daw-merge-tracks-checklist" style="display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 10px;">
+                                        <!-- Dynamically generated track checkboxes -->
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; flex-direction: column; gap: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 12px;">
+                                    <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #ffffff; cursor: pointer; user-select: none;">
+                                        <input type="checkbox" id="daw-merge-mute-sources" checked style="accent-color: #34d399; width: 14px; height: 14px; cursor: pointer;">
+                                        Mute source tracks after merging (Prevents doubled volume / phase collision)
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: rgba(255,255,255,0.7); cursor: pointer; user-select: none;">
+                                        <input type="checkbox" id="daw-merge-normalize-result" checked style="accent-color: #0a84ff; width: 14px; height: 14px; cursor: pointer;">
+                                        Normalize resulting merged track to 0.0 dBFS Peak
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Footer -->
+                            <div style="padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: space-between;">
+                                <button id="daw-merge-tracks-cancel-btn" type="button" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); color: rgba(255,255,255,0.8); padding: 8px 16px; border-radius: 8px; font-size: 11.5px; font-weight: 700; cursor: pointer;">Cancel</button>
+                                <button id="daw-merge-tracks-confirm-btn" type="button" style="background: linear-gradient(135deg, #ffffff 0%, #d1d5db 100%); border: 1px solid rgba(255,255,255,0.6); color: #000000; padding: 8px 22px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer; box-shadow: 0 0 16px rgba(255,255,255,0.35); display: inline-flex; align-items: center; gap: 6px;">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                                    Merge &amp; Bounce Tracks
                                 </button>
                             </div>
                         </div>
