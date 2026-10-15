@@ -8657,10 +8657,12 @@ export async function initStandaloneDaw() {
                 daw._micSourceNode = null;
                 daw._micSourceStream = null;
             }
-            startDawMicLevelMonitor(devId);
+            if (daw._hasUserGrantedMicPermission || daw.isRecording) {
+                startDawMicLevelMonitor(devId);
+            }
         };
 
-        startDawMicLevelMonitor(micSelect.value);
+        // Audio permissions must ONLY load lazily when recording is initiated, never on page load/splash screen!
     };
 
     // Multi-Track Voice-Over / Overdub Recording Engine with Simultaneous Playback
@@ -8706,6 +8708,9 @@ export async function initStandaloneDaw() {
         let stream;
         try {
             stream = await getOrCreateDawMicStream(selectedMicId);
+            daw._hasUserGrantedMicPermission = true;
+            initDawMicSetup();
+            startDawMicLevelMonitor(selectedMicId);
         } catch (err) {
             await showStudioAlert('Microphone Access Error', 'Could not access microphone: ' + err.message + '\n\nPlease verify microphone permissions in your browser settings.');
             return;
