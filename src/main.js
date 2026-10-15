@@ -47,10 +47,10 @@ export async function initStandaloneDaw() {
         });
 
         const bootSequence = [
-            { pct: 28, text: 'Initializing 64-Bit Studio Audio Engine...', delay: 200 },
-            { pct: 58, text: 'Mounting Web Audio DSP Plugin Architecture...', delay: 600 },
-            { pct: 86, text: 'Calibrating Hardware Clocks & Multi-Rate Buffers...', delay: 1000 },
-            { pct: 100, text: 'Studio DAW Workspace Ready', delay: 1350 }
+            { pct: 28, text: 'Initializing 64-Bit Studio Audio Engine...', delay: 350 },
+            { pct: 58, text: 'Mounting Web Audio DSP Plugin Architecture...', delay: 900 },
+            { pct: 86, text: 'Calibrating Hardware Clocks & Multi-Rate Buffers...', delay: 1600 },
+            { pct: 100, text: 'Studio DAW Workspace Ready', delay: 2200 }
         ];
 
         bootSequence.forEach(st => {
@@ -59,7 +59,7 @@ export async function initStandaloneDaw() {
                 if (pBar) pBar.style.width = `${st.pct}%`;
                 if (statusText) statusText.textContent = st.text;
                 if (st.pct === 100) {
-                    setTimeout(dismissSplash, 600);
+                    setTimeout(dismissSplash, 750);
                 }
             }, st.delay);
         });
