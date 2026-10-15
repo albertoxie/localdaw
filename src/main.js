@@ -12449,11 +12449,44 @@ export async function initStandaloneDaw() {
         const dropdowns = document.querySelectorAll('.daw-menu-dropdown');
 
         const closeAllMenus = () => {
-            dropdowns.forEach(d => d.style.display = 'none');
+            dropdowns.forEach(d => {
+                d.style.setProperty('display', 'none', 'important');
+            });
             menuBtns.forEach(b => {
                 b.style.background = 'none';
                 b.style.color = 'rgba(255,255,255,0.78)';
             });
+        };
+
+        const openMenu = (btn) => {
+            closeAllMenus();
+            const menuName = btn.getAttribute('data-menu');
+            const dd = document.getElementById(`daw-menu-dropdown-${menuName}`);
+            if (!dd) return;
+
+            // Make visible and set fixed coordinates relative to viewport
+            dd.style.setProperty('display', 'block', 'important');
+            dd.style.setProperty('position', 'fixed', 'important');
+            dd.style.setProperty('z-index', '999999', 'important');
+
+            const rect = btn.getBoundingClientRect();
+            const top = rect.bottom + 2;
+            dd.style.setProperty('top', `${top}px`, 'important');
+
+            const ddWidth = dd.offsetWidth || 240;
+            let left = rect.left;
+            if (left + ddWidth > window.innerWidth - 8) {
+                left = Math.max(8, window.innerWidth - ddWidth - 8);
+            }
+            dd.style.setProperty('left', `${left}px`, 'important');
+
+            const maxHeight = Math.max(180, window.innerHeight - (top + 16));
+            dd.style.setProperty('max-height', `${maxHeight}px`, 'important');
+            dd.style.setProperty('overflow-y', 'auto', 'important');
+            dd.style.setProperty('-webkit-overflow-scrolling', 'touch', 'important');
+
+            btn.style.background = 'rgba(255,255,255,0.12)';
+            btn.style.color = '#ffffff';
         };
 
         // Toggle dropdown on button click
@@ -12464,12 +12497,10 @@ export async function initStandaloneDaw() {
                 const dd = document.getElementById(`daw-menu-dropdown-${menuName}`);
                 const isOpen = dd && dd.style.display === 'block';
 
-                closeAllMenus();
-
-                if (!isOpen && dd) {
-                    dd.style.display = 'block';
-                    btn.style.background = 'rgba(255,255,255,0.12)';
-                    btn.style.color = '#ffffff';
+                if (isOpen) {
+                    closeAllMenus();
+                } else {
+                    openMenu(btn);
                 }
             });
 
@@ -12477,24 +12508,24 @@ export async function initStandaloneDaw() {
             btn.addEventListener('mouseenter', () => {
                 const anyOpen = Array.from(dropdowns).some(d => d.style.display === 'block');
                 if (anyOpen) {
-                    closeAllMenus();
-                    const menuName = btn.getAttribute('data-menu');
-                    const dd = document.getElementById(`daw-menu-dropdown-${menuName}`);
-                    if (dd) {
-                        dd.style.display = 'block';
-                        btn.style.background = 'rgba(255,255,255,0.12)';
-                        btn.style.color = '#ffffff';
-                    }
+                    openMenu(btn);
                 }
             });
         });
 
         // Close menus when clicking outside
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('#daw-desktop-menu-bar')) {
+            if (!e.target.closest('#daw-desktop-menu-bar') && !e.target.closest('.daw-menu-dropdown')) {
                 closeAllMenus();
             }
         });
+
+        // Dismiss open menu immediately when menubar scrolls horizontally (crucial for compact/mobile view)
+        const menuBar = document.getElementById('daw-desktop-menu-bar');
+        if (menuBar) {
+            menuBar.addEventListener('scroll', closeAllMenus, { passive: true });
+        }
+        window.addEventListener('resize', closeAllMenus, { passive: true });
 
         // ==========================================
         // 1. NEW RECORDING PROJECT & TRACKS SETUP MODAL
