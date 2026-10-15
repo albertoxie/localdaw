@@ -20,6 +20,14 @@ const escapeStudioHtml = (str) => {
         .replace(/'/g, '&#39;');
 };
 
+const calculateBroadcastVuPct = (linearPeak) => {
+    if (!linearPeak || linearPeak <= 0.003) return 0;
+    const db = 20 * Math.log10(linearPeak);
+    // Standard European Broadcast VU: -48 dBFS floor to 0 dBFS ceiling
+    const pct = ((db + 48) / 48) * 100;
+    return Math.min(100, Math.max(0, Math.round(pct)));
+};
+
 export async function initStandaloneDaw() {
     // Cinema Fullscreen App Splash & Engine Boot Loader
     const initSplashScreen = () => {
@@ -2811,9 +2819,9 @@ export async function initStandaloneDaw() {
                                         <span style="font-size: 8px; font-family: monospace; color: rgba(255,255,255,0.7); min-width: 22px; text-align: right;" id="track-vol-readout-${t.id}">${Math.round(t.vol * 100)}%</span>
                                     </div>
 
-                                    <!-- Tiny Track Header VU Level Meter -->
-                                    <div class="track-mini-vu-container" id="track-mini-vu-${t.id}" title="Track Live Output VU Level" style="width: 4px; height: 18px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; flex-shrink: 0; border: 0.5px solid rgba(255,255,255,0.12);">
-                                        <div class="track-mini-vu-fill" id="track-mini-vu-fill-${t.id}" style="width: 100%; height: 0%; background: linear-gradient(to top, #30d158 0%, #34d399 75%, #ff453a 100%); transition: height 0.06s ease-out; border-radius: 1px;"></div>
+                                    <!-- Track Header VU Level Meter -->
+                                    <div class="track-mini-vu-container" id="track-mini-vu-${t.id}" title="Track Live Output VU Level" style="width: 7px; height: 24px; background: rgba(0,0,0,0.6); border-radius: 2px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.2); box-shadow: inset 0 1px 2px rgba(0,0,0,0.7);">
+                                        <div class="track-mini-vu-fill" id="track-mini-vu-fill-${t.id}" style="width: 100%; height: 0%; background: linear-gradient(to top, #30d158 0%, #34d399 65%, #ffd60a 82%, #ff453a 100%); transition: height 0.04s ease-out; border-radius: 1px;"></div>
                                     </div>
                                 </div>
                             </div>
@@ -2884,6 +2892,12 @@ export async function initStandaloneDaw() {
         document.querySelectorAll('.track-arm-btn').forEach(btn => {
             btn.onclick = (e) => {
                 e.stopPropagation();
+                if (daw._recordTrackId && daw._recordTrackId !== '__new__') {
+                    const prevMini = document.getElementById(`track-mini-vu-fill-${daw._recordTrackId}`);
+                    const prevMixer = document.getElementById(`daw-mixer-vu-${daw._recordTrackId}`);
+                    if (prevMini) prevMini.style.height = '0%';
+                    if (prevMixer) prevMixer.style.height = '0%';
+                }
                 const trackKey = e.currentTarget.getAttribute('data-track');
                 if (daw._recordTrackId === trackKey) {
                     daw._recordTrackId = '__new__';
@@ -7962,7 +7976,8 @@ export async function initStandaloneDaw() {
                 const vuDb = document.getElementById('daw-master-vu-db');
                 const lufsBadge = document.getElementById('daw-master-lufs-badge');
 
-                if (vuBar) vuBar.style.width = `${Math.min(100, Math.round(peak * 100))}%`;
+                const masterPct = calculateBroadcastVuPct(peak);
+                if (vuBar) vuBar.style.width = `${masterPct}%`;
                 const dbStr = peak > 0.001 ? (20 * Math.log10(peak)).toFixed(1) : '-inf';
                 if (vuDb) {
                     vuDb.textContent = dbStr === '-inf' ? '-∞ dB' : `${dbStr} dB`;
@@ -7976,15 +7991,16 @@ export async function initStandaloneDaw() {
                 const vuClip = document.getElementById('daw-vu-clip-badge');
                 const vuWindowLufs = document.getElementById('daw-vu-lufs-window-badge');
 
-                if (vuBarL) vuBarL.style.height = `${Math.min(100, Math.round(peak * 100))}%`;
+                if (vuBarL) vuBarL.style.height = `${masterPct}%`;
                 const deckMasterVuL = document.getElementById('daw-deck-mixer-master-vu-l');
-                if (deckMasterVuL) deckMasterVuL.style.height = `${Math.min(100, Math.round(peak * 100))}%`;
+                if (deckMasterVuL) deckMasterVuL.style.height = `${masterPct}%`;
                 const peakR = Math.max(0, Math.min(1.0, peak * (0.96 + (((primaryData ? primaryData[0] : 128)) % 7) * 0.01)));
+                const masterPctR = calculateBroadcastVuPct(peakR);
                 if (vuBarR) {
-                    vuBarR.style.height = `${Math.min(100, Math.round(peakR * 100))}%`;
+                    vuBarR.style.height = `${masterPctR}%`;
                 }
                 const deckMasterVuR = document.getElementById('daw-deck-mixer-master-vu-r');
-                if (deckMasterVuR) deckMasterVuR.style.height = `${Math.min(100, Math.round(peakR * 100))}%`;
+                if (deckMasterVuR) deckMasterVuR.style.height = `${masterPctR}%`;
                 if (vuDbL) vuDbL.textContent = dbStr === '-inf' ? '-∞' : `${dbStr}dB`;
                 if (vuDbR) vuDbR.textContent = dbStr === '-inf' ? '-∞' : `${dbStr}dB`;
                 if (vuClip) {
@@ -8056,8 +8072,18 @@ export async function initStandaloneDaw() {
                     }
 
                     let tPeak = 0;
-                    if (daw.isRecording && (daw._recordTrackId === tKey || dawRecordingTargetTrackId === tKey) && daw._liveRecAnalyser) {
+                    const isRecTarget = daw.isRecording && (daw._recordTrackId === tKey || dawRecordingTargetTrackId === tKey);
+                    const isArmedMicTarget = !daw.isRecording && (daw._recordTrackId === tKey || dawRecordingTargetTrackId === tKey) && daw._micMonitorAnalyser;
+
+                    if (isRecTarget && daw._liveRecAnalyser) {
                         tPeak = liveMicPeak;
+                    } else if (isArmedMicTarget && daw._micMonitorAnalyser) {
+                        const mData = new Uint8Array(daw._micMonitorAnalyser.frequencyBinCount);
+                        daw._micMonitorAnalyser.getByteTimeDomainData(mData);
+                        for (let mi = 0; mi < mData.length; mi++) {
+                            const mDev = Math.abs((mData[mi] - 128) / 128);
+                            if (mDev > tPeak) tPeak = mDev;
+                        }
                     } else {
                         const bus = daw.trackBuses && daw.trackBuses[tKey];
                         if (bus && bus.analyser && bus.data) {
@@ -8069,7 +8095,7 @@ export async function initStandaloneDaw() {
                         }
                     }
 
-                    const pct = Math.min(100, Math.round(tPeak * 100));
+                    const pct = calculateBroadcastVuPct(tPeak);
                     if (miniVuFill) miniVuFill.style.height = `${pct}%`;
                     if (deckMixerVu) deckMixerVu.style.height = `${pct}%`;
                 });
@@ -8537,6 +8563,18 @@ export async function initStandaloneDaw() {
                         if (bar) {
                             bar.style.width = `${Math.min(100, Math.round(peak * 190))}%`;
                         }
+
+                        // Drive armed track mini VU and mixer VU meter while testing mic levels
+                        const armedTrackId = daw._recordTrackId && daw._recordTrackId !== '__new__'
+                            ? daw._recordTrackId
+                            : (daw.tracks && Object.keys(daw.tracks)[0]);
+                        if (armedTrackId) {
+                            const armedMiniVu = document.getElementById(`track-mini-vu-fill-${armedTrackId}`);
+                            const armedMixerVu = document.getElementById(`daw-mixer-vu-${armedTrackId}`);
+                            const armedPct = calculateBroadcastVuPct(peak);
+                            if (armedMiniVu) armedMiniVu.style.height = `${armedPct}%`;
+                            if (armedMixerVu) armedMixerVu.style.height = `${armedPct}%`;
+                        }
                     }
                     requestAnimationFrame(updateMeter);
                 };
@@ -8945,6 +8983,20 @@ export async function initStandaloneDaw() {
         } else {
             stopDawEngineTicker();
             setStudioStatus('Ready', 'ready', false);
+            const vuBar = document.getElementById('daw-master-vu-bar');
+            const vuDb = document.getElementById('daw-master-vu-db');
+            if (vuBar) vuBar.style.width = '0%';
+            if (vuDb) vuDb.textContent = '-∞ dB';
+            const vuBarL = document.getElementById('daw-vu-bar-l');
+            const vuBarR = document.getElementById('daw-vu-bar-r');
+            if (vuBarL) vuBarL.style.height = '0%';
+            if (vuBarR) vuBarR.style.height = '0%';
+            const dMasterL = document.getElementById('daw-deck-mixer-master-vu-l');
+            const dMasterR = document.getElementById('daw-deck-mixer-master-vu-r');
+            if (dMasterL) dMasterL.style.height = '0%';
+            if (dMasterR) dMasterR.style.height = '0%';
+            document.querySelectorAll('.track-mini-vu-fill').forEach(fill => { fill.style.height = '0%'; });
+            document.querySelectorAll('[id^="daw-mixer-vu-"]').forEach(fill => { fill.style.height = '0%'; });
             const playBtn = document.getElementById('timeline-play-btn');
             if (playBtn) {
                 playBtn.style.background = 'linear-gradient(135deg, rgba(48, 209, 88, 0.22) 0%, rgba(5, 150, 105, 0.16) 100%)';
