@@ -1855,6 +1855,50 @@ export async function initStandaloneDaw() {
             window.addEventListener('mousemove', onMouseMove);
             window.addEventListener('mouseup', onMouseUp);
         });
+
+        // Mobile Touch Responsive Ruler Scrubbing
+        rulerEl.addEventListener('touchstart', (e) => {
+            if (e.touches.length !== 1) return;
+            const touch = e.touches[0];
+            e.preventDefault();
+            isRulerScrubbing = true;
+            wasPlayingBeforeRulerScrub = daw.isPlaying;
+            if (daw.isPlaying) stopDawPlayback(false);
+
+            seekTimelineFromClientX(touch.clientX, true);
+
+            const onTouchMove = (moveEv) => {
+                if (!isRulerScrubbing || moveEv.touches.length !== 1) return;
+                moveEv.preventDefault();
+                const t = moveEv.touches[0];
+                seekTimelineFromClientX(t.clientX, true);
+
+                const viewport = document.getElementById('timeline-scroll-viewport');
+                if (viewport) {
+                    const vpRect = viewport.getBoundingClientRect();
+                    if (t.clientX > vpRect.right - 50) {
+                        viewport.scrollLeft += 15;
+                    } else if (t.clientX < vpRect.left + 50) {
+                        viewport.scrollLeft = Math.max(0, viewport.scrollLeft - 15);
+                    }
+                }
+            };
+
+            const onTouchEnd = () => {
+                if (!isRulerScrubbing) return;
+                isRulerScrubbing = false;
+                window.removeEventListener('touchmove', onTouchMove);
+                window.removeEventListener('touchend', onTouchEnd);
+                window.removeEventListener('touchcancel', onTouchEnd);
+                if (wasPlayingBeforeRulerScrub) {
+                    startDawPlayback();
+                }
+            };
+
+            window.addEventListener('touchmove', onTouchMove, { passive: false });
+            window.addEventListener('touchend', onTouchEnd);
+            window.addEventListener('touchcancel', onTouchEnd);
+        }, { passive: false });
     };
 
     const renderDawRuler = () => {
@@ -2261,20 +2305,11 @@ export async function initStandaloneDaw() {
                 rightPeaks.push(chan1 ? maxR : maxL);
             }
 
-            let highestCombined = 0, highestL = 0, highestR = 0;
-            for (let i = 0; i < peaks.length; i++) {
-                if (peaks[i] > highestCombined) highestCombined = peaks[i];
-                if (leftPeaks[i] > highestL) highestL = leftPeaks[i];
-                if (rightPeaks[i] > highestR) highestR = rightPeaks[i];
-            }
-            if (highestCombined < 0.01) highestCombined = 0.01;
-            if (highestL < 0.01) highestL = 0.01;
-            if (highestR < 0.01) highestR = 0.01;
-
-            const normCombined = peaks.map(p => Math.min(1.0, Math.max(0.06, p / highestCombined)));
-            normCombined.left = leftPeaks.map(p => Math.min(1.0, Math.max(0.06, p / highestL)));
-            normCombined.right = rightPeaks.map(p => Math.min(1.0, Math.max(0.06, p / highestR)));
-            return normCombined;
+            // Return true linear sample amplitude (0.0 to 1.0) so peak normalization visibly grows waveforms
+            const resCombined = peaks.map(p => Math.min(1.0, Math.max(0.02, p)));
+            resCombined.left = leftPeaks.map(p => Math.min(1.0, Math.max(0.02, p)));
+            resCombined.right = rightPeaks.map(p => Math.min(1.0, Math.max(0.02, p)));
+            return resCombined;
         } catch (err) {
             console.warn('[Waveform] Peak extraction error:', err);
             return [];
@@ -4656,6 +4691,61 @@ export async function initStandaloneDaw() {
                 window.addEventListener('mousemove', onClipMouseMove);
                 window.addEventListener('mouseup', onClipMouseUp);
             });
+
+            // Mobile Touch Clip Dragging & Selection
+            clipEl.addEventListener('touchstart', (e) => {
+                if (e.touches.length !== 1) return;
+                const touch = e.touches[0];
+                if (e.target.closest('.daw-clip-trim-handle') || e.target.closest('.daw-clip-fade-handle')) return;
+
+                daw.selectedClipIds.clear();
+                daw.selectedClipIds.add(clip.id);
+                daw.selectedClipId = clip.id;
+                if (typeof window._syncBottomDeckClipInspector === 'function') window._syncBottomDeckClipInspector();
+                document.querySelectorAll('.daw-timeline-clip').forEach(el => {
+                    const isSel = el.getAttribute('data-clip-id') === clip.id;
+                    el.classList.toggle('is-selected', isSel);
+                    el.style.border = isSel ? '2px solid #ffffff' : '1px solid rgba(255,255,255,0.2)';
+                });
+
+                const startTouchX = touch.clientX;
+                const leaderInitOffset = Number.isFinite(clip.startOffset) ? clip.startOffset : 0;
+                let hasDraggedTouch = false;
+
+                const onClipTouchMove = (moveEv) => {
+                    if (moveEv.touches.length !== 1) return;
+                    const t = moveEv.touches[0];
+                    const dx = t.clientX - startTouchX;
+
+                    if (!hasDraggedTouch && Math.abs(dx) > 6) {
+                        hasDraggedTouch = true;
+                    }
+                    if (hasDraggedTouch) {
+                        moveEv.preventDefault();
+                        const deltaSec = dx / daw.zoom;
+                        const newOffset = Math.max(0, leaderInitOffset + deltaSec);
+                        clipEl.style.transform = `translateX(${dx}px)`;
+                        clip.startOffset = Math.round(newOffset * 100) / 100;
+                    }
+                };
+
+                const onClipTouchEnd = () => {
+                    window.removeEventListener('touchmove', onClipTouchMove);
+                    window.removeEventListener('touchend', onClipTouchEnd);
+                    window.removeEventListener('touchcancel', onClipTouchEnd);
+                    clipEl.style.transform = '';
+                    if (hasDraggedTouch) {
+                        pushDawHistory(`Move Clip "${clip.name}"`);
+                        recalculateDawDuration();
+                        renderDawClips();
+                        if (typeof autoSaveDawSession === 'function') autoSaveDawSession();
+                    }
+                };
+
+                window.addEventListener('touchmove', onClipTouchMove, { passive: false });
+                window.addEventListener('touchend', onClipTouchEnd);
+                window.addEventListener('touchcancel', onClipTouchEnd);
+            }, { passive: true });
 
             // Double click to open Inspector / Rename Modal
             clipEl.addEventListener('dblclick', (e) => {
@@ -11868,7 +11958,13 @@ export async function initStandaloneDaw() {
             updateDawPlayhead();
             updateDawFooter();
 
-            showStudioToast(`Session restored (${daw.clips.length} clip(s), ${Object.keys(daw.tracks).length} tracks)`);
+            if (daw.projectName) {
+                const targetTitleEl = document.getElementById('timeline-target-title');
+                if (targetTitleEl) targetTitleEl.textContent = daw.projectName;
+            }
+
+            const lastSavedDate = sessionPayload.updatedAt ? new Date(sessionPayload.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'recently';
+            showStudioToast(`Session restored (Last saved at ${lastSavedDate} • ${daw.clips.length} clip(s), ${Object.keys(daw.tracks).length} tracks)`);
             return true;
         } catch (err) {
             console.error('[DAW Storage] Failed to restore session from IndexedDB:', err);
@@ -12586,6 +12682,7 @@ export async function initStandaloneDaw() {
                 footerEngineText.textContent = `${chosenSr / 1000} kHz • ${chosenBit}`;
             }
 
+            daw.projectName = projectTitle;
             const targetTitleEl = document.getElementById('timeline-target-title');
             if (targetTitleEl) targetTitleEl.textContent = projectTitle;
 
@@ -12597,6 +12694,9 @@ export async function initStandaloneDaw() {
             fitTimelineToWindow();
 
             closeNewProjectModal();
+            if (typeof autoSaveDawSession === 'function') {
+                autoSaveDawSession();
+            }
             showStudioToast(`Project "${projectTitle}" created @ ${chosenSr / 1000} kHz (${chosenBit}, ${chosenFps} fps) with ${Object.keys(freshTracks).length} tracks!`);
         });
 
@@ -12614,11 +12714,25 @@ export async function initStandaloneDaw() {
             }
         });
 
-        // Wire Save Project As File (.localfilmdaw)
-        document.getElementById('daw-menu-file-save-as')?.addEventListener('click', () => {
+        // Wire Save Project As (Prompt name, save to library & export file)
+        document.getElementById('daw-menu-file-save-as')?.addEventListener('click', async () => {
             closeAllMenus();
-            if (typeof saveDawProjectFile === 'function') {
-                saveDawProjectFile();
+            const currentName = daw.projectName || 'Untitled Project';
+            const newName = prompt('Save Project As — Enter project name:', currentName);
+            if (newName && newName.trim()) {
+                daw.projectName = newName.trim();
+                const targetTitleEl = document.getElementById('timeline-target-title');
+                if (targetTitleEl) targetTitleEl.textContent = daw.projectName;
+                if (typeof saveCurrentProjectToLibrary === 'function') {
+                    await saveCurrentProjectToLibrary(daw.projectName);
+                }
+                if (typeof saveDawProjectFile === 'function') {
+                    saveDawProjectFile();
+                }
+                if (typeof autoSaveDawSession === 'function') {
+                    autoSaveDawSession();
+                }
+                showStudioToast(`Project saved as "${daw.projectName}"`);
             }
         });
 
@@ -14647,7 +14761,7 @@ export async function initStandaloneDaw() {
         // 8. LOCAL AUTO-SAVE ENGINE & INTERVAL MANAGER
         // ==========================================
         let _dawAutoSaveIntervalTimer = null;
-        let _currentAutoSaveIntervalMs = 60000; // default 1 minute
+        let _currentAutoSaveIntervalMs = 300000; // default 5 minutes
         try {
             const savedInterval = localStorage.getItem('localdaw_autosave_interval');
             if (savedInterval !== null) {
@@ -14657,14 +14771,16 @@ export async function initStandaloneDaw() {
 
         const updateAutoSaveUI = () => {
             const pill = document.getElementById('daw-autosave-indicator-pill');
-            const check30s = document.getElementById('daw-settings-autosave-30s-check');
-            const check1m = document.getElementById('daw-settings-autosave-1m-check');
+            const check2m = document.getElementById('daw-settings-autosave-2m-check');
             const check5m = document.getElementById('daw-settings-autosave-5m-check');
+            const check10m = document.getElementById('daw-settings-autosave-10m-check');
+            const check30m = document.getElementById('daw-settings-autosave-30m-check');
             const checkOff = document.getElementById('daw-settings-autosave-off-check');
 
-            if (check30s) check30s.style.display = (_currentAutoSaveIntervalMs === 30000) ? 'inline' : 'none';
-            if (check1m) check1m.style.display = (_currentAutoSaveIntervalMs === 60000) ? 'inline' : 'none';
+            if (check2m) check2m.style.display = (_currentAutoSaveIntervalMs === 120000) ? 'inline' : 'none';
             if (check5m) check5m.style.display = (_currentAutoSaveIntervalMs === 300000) ? 'inline' : 'none';
+            if (check10m) check10m.style.display = (_currentAutoSaveIntervalMs === 600000) ? 'inline' : 'none';
+            if (check30m) check30m.style.display = (_currentAutoSaveIntervalMs === 1800000) ? 'inline' : 'none';
             if (checkOff) checkOff.style.display = (_currentAutoSaveIntervalMs === 0) ? 'inline' : 'none';
 
             if (pill) {
@@ -14674,7 +14790,11 @@ export async function initStandaloneDaw() {
                     pill.style.color = 'rgba(255,255,255,0.45)';
                     pill.title = 'Local Auto-Save is currently disabled';
                 } else {
-                    const label = _currentAutoSaveIntervalMs === 30000 ? '30s' : (_currentAutoSaveIntervalMs === 300000 ? '5m' : '1m');
+                    let label = '5m';
+                    if (_currentAutoSaveIntervalMs === 120000) label = '2m';
+                    else if (_currentAutoSaveIntervalMs === 300000) label = '5m';
+                    else if (_currentAutoSaveIntervalMs === 600000) label = '10m';
+                    else if (_currentAutoSaveIntervalMs === 1800000) label = '30m';
                     pill.innerHTML = `<span style="width: 5px; height: 5px; border-radius: 50%; background: #34d399; box-shadow: 0 0 6px #34d399; display: inline-block;"></span> <span>Auto-Save: ${label}</span>`;
                     pill.style.borderColor = 'rgba(52, 211, 153, 0.3)';
                     pill.style.color = '#34d399';
@@ -14711,24 +14831,32 @@ export async function initStandaloneDaw() {
                 if (intervalMs === 0) {
                     showStudioToast('Local Auto-Save: Disabled');
                 } else {
-                    const durStr = intervalMs === 30000 ? '30 seconds' : (intervalMs === 300000 ? '5 minutes' : '1 minute');
+                    let durStr = '5 minutes';
+                    if (intervalMs === 120000) durStr = '2 minutes';
+                    else if (intervalMs === 300000) durStr = '5 minutes';
+                    else if (intervalMs === 600000) durStr = '10 minutes';
+                    else if (intervalMs === 1800000) durStr = '30 minutes';
                     showStudioToast(`Local Auto-Save Interval: Every ${durStr}`);
                 }
             }
         };
 
         // Wire Auto-Save Interval Menu Options
-        document.getElementById('daw-menu-settings-autosave-30s')?.addEventListener('click', () => {
+        document.getElementById('daw-menu-settings-autosave-2m')?.addEventListener('click', () => {
             closeAllMenus();
-            setAutoSaveInterval(30000);
-        });
-        document.getElementById('daw-menu-settings-autosave-1m')?.addEventListener('click', () => {
-            closeAllMenus();
-            setAutoSaveInterval(60000);
+            setAutoSaveInterval(120000);
         });
         document.getElementById('daw-menu-settings-autosave-5m')?.addEventListener('click', () => {
             closeAllMenus();
             setAutoSaveInterval(300000);
+        });
+        document.getElementById('daw-menu-settings-autosave-10m')?.addEventListener('click', () => {
+            closeAllMenus();
+            setAutoSaveInterval(600000);
+        });
+        document.getElementById('daw-menu-settings-autosave-30m')?.addEventListener('click', () => {
+            closeAllMenus();
+            setAutoSaveInterval(1800000);
         });
         document.getElementById('daw-menu-settings-autosave-off')?.addEventListener('click', () => {
             closeAllMenus();
@@ -15232,6 +15360,25 @@ export async function initStandaloneDaw() {
             seekTimelineFromClientX(e.clientX);
         }
     });
+
+    // Touch tap playhead seeking for mobile
+    document.getElementById('timeline-lanes-container')?.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        const touch = e.touches[0];
+        const laneEl = e.target.closest('.timeline-lane');
+        if (laneEl) {
+            const trId = laneEl.getAttribute('data-track-id');
+            if (trId && daw._activeFxTrackId !== trId) {
+                daw._activeFxTrackId = trId;
+                renderDawTracks();
+                syncActiveTrackToDeck();
+                if (typeof renderMixerStrips === 'function') renderMixerStrips();
+            }
+        }
+        if (!e.target.closest('.daw-timeline-clip') && !e.target.closest('.lane-automation-svg') && !e.target.closest('.daw-kf-group') && !e.target.closest('button') && !e.target.closest('input')) {
+            seekTimelineFromClientX(touch.clientX);
+        }
+    }, { passive: true });
 
     // Bidirectional vertical scroll sync between timeline lanes and track headers sidebar
     const timelineViewport = document.getElementById('timeline-scroll-viewport');
@@ -15798,14 +15945,19 @@ export async function initStandaloneDaw() {
         initRecentProjectsModal();
     }
 
-    // Auto-save on page reload or close
-    window.addEventListener('beforeunload', () => {
+    // Auto-save and exit confirmation on page reload or close
+    window.addEventListener('beforeunload', (e) => {
         try {
             if (typeof autoSaveDawSession === 'function') {
                 autoSaveDawSession();
             }
-        } catch (e) {
-            console.warn('[Session] beforeunload autoSave error:', e);
+        } catch (err) {
+            console.warn('[Session] beforeunload autoSave error:', err);
+        }
+        if (daw && daw.clips && daw.clips.length > 0) {
+            e.preventDefault();
+            e.returnValue = 'You have an active session in LocalDAW. Your progress is auto-saved locally. Are you sure you want to exit?';
+            return e.returnValue;
         }
     });
 
@@ -17035,9 +17187,12 @@ export async function initStandaloneDaw() {
                 const peaks = selectedClip.peaks || [];
                 if (peaks.length > 0) {
                     const step = 2;
-                    const clipColor = selectedClip.color || tr?.color || '#0a84ff';
-                    ctx.strokeStyle = clipColor;
-                    ctx.lineWidth = 1.6;
+                    const grad = ctx.createLinearGradient(0, 0, 0, h);
+                    grad.addColorStop(0, '#38bdf8');
+                    grad.addColorStop(0.5, '#0ea5e9');
+                    grad.addColorStop(1, '#0284c7');
+                    ctx.strokeStyle = grad;
+                    ctx.lineWidth = 1.8;
                     ctx.beginPath();
                     for (let x = 0; x < w; x += step) {
                         const idx = Math.floor((x / w) * peaks.length);
@@ -17216,8 +17371,9 @@ export async function initStandaloneDaw() {
             }
         });
 
-        // Gain Trim Slider
-        document.getElementById('daw-deck-clip-gain-slider')?.addEventListener('input', (e) => {
+        // Gain Trim Slider (with Double-Click Reset to 0.0 dB)
+        const gainSliderInput = document.getElementById('daw-deck-clip-gain-slider');
+        gainSliderInput?.addEventListener('input', (e) => {
             const clip = daw.clips && daw.clips.find(c => c.id === daw.selectedClipId);
             if (!clip) return;
             const val = parseFloat(e.target.value) || 1.0;
@@ -17228,6 +17384,19 @@ export async function initStandaloneDaw() {
                 valEl.textContent = `${db >= 0 ? '+' : ''}${db} dB`;
             }
             renderDawClips();
+        });
+
+        gainSliderInput?.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            const clip = daw.clips && daw.clips.find(c => c.id === daw.selectedClipId);
+            if (!clip) return;
+            clip.gain = 1.0;
+            gainSliderInput.value = '1.0';
+            const valEl = document.getElementById('daw-deck-clip-gain-val');
+            if (valEl) valEl.textContent = '0.0 dB';
+            renderDawClips();
+            if (typeof autoSaveDawSession === 'function') autoSaveDawSession();
+            showStudioToast(`Gain reset to 0.0 dB [${clip.name}]`);
         });
 
         // Fade In Slider & Curve Algorithm
@@ -18224,7 +18393,7 @@ export async function initStandaloneDaw() {
                             message,
                             diagnostics: diagInfo,
                             webhookUrl: targetWebhook,
-                            version: '1.8.39'
+                            version: '1.8.42'
                         }),
                         mode: 'no-cors'
                     });
@@ -18236,7 +18405,7 @@ export async function initStandaloneDaw() {
                 statusBox.style.background = 'rgba(255,255,255,0.06)';
                 statusBox.style.border = '1px solid rgba(255,255,255,0.2)';
                 statusBox.style.color = '#ffffff';
-                statusBox.innerHTML = `✓ Dispatch Successful! Thank you for testing LocalDAW v1.8.39. Your workflow input has been recorded for Alan Joyce & the studio engineering team.`;
+                statusBox.innerHTML = `✓ Dispatch Successful! Thank you for testing LocalDAW v1.8.42. Your workflow input has been recorded for Alan Joyce & the studio engineering team.`;
             }
 
             if (messageInput) messageInput.value = '';
@@ -18255,6 +18424,31 @@ export async function initStandaloneDaw() {
         });
     };
 
+    // ═════════════════════════════════════════════════════════════════════════════
+    // MOBILE DETECTION & TOUCH OPTIMIZATION ENGINE
+    // ═════════════════════════════════════════════════════════════════════════════
+    const initMobileStudioEngine = () => {
+        const checkMobile = () => {
+            const isMobile = (
+                window.innerWidth <= 768 ||
+                (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) ||
+                (window.matchMedia && window.matchMedia('(pointer: coarse)').matches && window.innerWidth <= 1024) ||
+                /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+            );
+
+            if (isMobile) {
+                document.body.classList.add('daw-mobile-mode');
+                if (daw && daw.laneHeight > 75) daw.laneHeight = 65;
+            } else {
+                document.body.classList.remove('daw-mobile-mode');
+            }
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        window.addEventListener('orientationchange', checkMobile);
+    };
+
     renderDawClips();
     updateDawPlayhead();
     bindFooterControls();
@@ -18262,5 +18456,6 @@ export async function initStandaloneDaw() {
     initBottomStudioDeck();
     initTrackContextMenu();
     initDawFeedbackSystem();
-    showStudioToast('LocalFilm Studio DAW v1.8.39 Ready');
+    initMobileStudioEngine();
+    showStudioToast('LocalDAW v1.8.42 Ready');
 }

@@ -832,4 +832,86 @@ html, body {
   margin: 4px 0;
 }
 
+/* ==========================================================================
+   LOCALDAW MOBILE RESPONSIVE ENGINE (Touch Responsive & Compact Mobile Studio)
+   ========================================================================== */
+@media (max-width: 768px), (pointer: coarse) {
+  body.daw-mobile-mode #daw-desktop-menu-bar,
+  #daw-desktop-menu-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    padding: 6px 8px;
+    gap: 4px;
+  }
+
+  body.daw-mobile-mode .daw-menubar-btn,
+  body.daw-mobile-mode .daw-menubar-dropdown-item {
+    min-height: 40px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  /* Compact Track Headers for Mobile Screens */
+  body.daw-mobile-mode #daw-track-headers-container,
+  #daw-track-headers-container {
+    width: clamp(120px, 32vw, 160px) !important;
+    min-width: 120px !important;
+  }
+
+  body.daw-mobile-mode .daw-track-header {
+    padding: 6px 8px !important;
+  }
+
+  body.daw-mobile-mode .daw-track-vol-slider {
+    width: 60px !important;
+  }
+
+  /* Sticky Thumb-Friendly Transport Controls */
+  body.daw-mobile-mode #timeline-play-btn,
+  body.daw-mobile-mode #timeline-stop-btn,
+  body.daw-mobile-mode #timeline-rec-btn,
+  body.daw-mobile-mode #timeline-loop-btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  /* Touch scrolling on timeline viewport */
+  #timeline-scroll-viewport {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+
+  /* Streamlined Top Secondary Toolbar */
+  body.daw-mobile-mode #podcast-editor-top-toolbar,
+  #podcast-editor-top-toolbar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    padding: 6px 8px;
+    gap: 4px;
+  }
+
+  body.daw-mobile-mode .podcast-editor-btn {
+    min-height: 38px;
+    padding: 6px 12px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Docked Bottom Deck Mobile Adaptation */
+  body.daw-mobile-mode #daw-bottom-studio-deck {
+    max-height: 45vh;
+  }
+
+  body.daw-mobile-mode .daw-bottom-deck-tab {
+    min-height: 38px;
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+}
+
+
 

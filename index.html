@@ -42,8 +42,8 @@
 
             <!-- Title & Release Badge -->
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; justify-content: center;">
-                <span style="font-size: 13px; font-weight: 800; letter-spacing: 2.8px; color: #ffffff; text-transform: uppercase;">LOCALDAW PRO STUDIO</span>
-                <span style="font-size: 10px; font-family: 'JetBrains Mono', Menlo, monospace; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); padding: 2px 8px; border-radius: 3px; color: #e5e7eb; font-weight: 700;">BUILD v1.8.40 · 2026-10-15</span>
+                <span style="font-size: 13px; font-weight: 800; letter-spacing: 2.8px; color: #ffffff; text-transform: uppercase;">LOCALDAW STUDIO</span>
+                <span style="font-size: 10px; font-family: 'JetBrains Mono', Menlo, monospace; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); padding: 2px 8px; border-radius: 3px; color: #e5e7eb; font-weight: 700;">BUILD v1.8.42 · 2026-10-15</span>
             </div>
 
             <!-- Dynamic Boot Status Text -->
@@ -84,8 +84,6 @@
             </div>
         </div>
     </div>
-        </div>
-    </div>
 
     <!-- Root Studio DAW Fullscreen Shell -->
     <div id="podcast-editor-modal">
@@ -95,10 +93,10 @@
                     <div id="daw-desktop-menu-bar" style="background: #1c1c1e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 3px 12px; display: flex; align-items: center; gap: 2px; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.85); user-select: none; z-index: 100; position: relative;">
                         <!-- LOCALDAW Brand Identity & Logo -->
                         <div style="display: flex; align-items: center; gap: 8px; padding: 2px 12px 2px 4px; margin-right: 6px; border-right: 1px solid rgba(255,255,255,0.12); flex-shrink: 0;">
-                            <img src="/logo.png" alt="LocalFilm Ireland Logo" title="LocalFilm Ireland • Sovereign Creative Audio Infrastructure" style="height: 18px; width: auto; object-fit: contain; filter: drop-shadow(0 0 6px rgba(10,132,255,0.3));" onerror="this.onerror=null; this.src='/logo.png';" />
-                            <div style="display: flex; align-items: center; gap: 5px;">
-                                <span style="font-size: 11px; font-weight: 900; letter-spacing: 0.9px; color: #ffffff; text-shadow: 0 0 10px rgba(255,255,255,0.25);">LOCALDAW</span>
-                                <span style="font-size: 8px; font-weight: 800; color: #0a84ff; font-family: monospace; letter-spacing: 0.4px; background: rgba(10,132,255,0.12); border: 1px solid rgba(10,132,255,0.28); padding: 1px 4px; border-radius: 3px;">PRO</span>
+                            <img src="/logo.png" alt="LocalFilm Ireland Logo" title="LocalFilm Ireland • Creative Audio Infrastructure" style="height: 18px; width: auto; object-fit: contain; filter: drop-shadow(0 0 6px rgba(255,255,255,0.25));" onerror="this.onerror=null; this.src='/logo.png';" />
+                            <div style="display: flex; flex-direction: column; line-height: 1.1;">
+                                <span style="font-size: 13px; font-weight: 900; letter-spacing: 1.2px; color: #ffffff; text-shadow: 0 0 10px rgba(255,255,255,0.25);">LOCALDAW</span>
+                                <span style="font-size: 7.5px; font-weight: 700; color: #94a3b8; letter-spacing: 0.8px; text-transform: uppercase;">POWERED BY LOCALFILM</span>
                             </div>
                         </div>
 
@@ -561,17 +559,21 @@
 
                                 <div class="daw-menu-divider"></div>
                                 <div class="daw-menu-section-header">LOCAL AUTO-SAVE ENGINE</div>
-                                <div class="daw-menu-item" id="daw-menu-settings-autosave-30s" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
-                                    <span>Auto-Save: Every 30 Seconds</span>
-                                    <span id="daw-settings-autosave-30s-check" style="display: none; color: #34d399;">✓</span>
-                                </div>
-                                <div class="daw-menu-item" id="daw-menu-settings-autosave-1m" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
-                                    <span>Auto-Save: Every 1 Minute (Default)</span>
-                                    <span id="daw-settings-autosave-1m-check" style="color: #34d399;">✓</span>
+                                <div class="daw-menu-item" id="daw-menu-settings-autosave-2m" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
+                                    <span>Auto-Save: Every 2 Minutes</span>
+                                    <span id="daw-settings-autosave-2m-check" style="display: none; color: #34d399;">✓</span>
                                 </div>
                                 <div class="daw-menu-item" id="daw-menu-settings-autosave-5m" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
-                                    <span>Auto-Save: Every 5 Minutes</span>
-                                    <span id="daw-settings-autosave-5m-check" style="display: none; color: #34d399;">✓</span>
+                                    <span>Auto-Save: Every 5 Minutes (Default)</span>
+                                    <span id="daw-settings-autosave-5m-check" style="color: #34d399;">✓</span>
+                                </div>
+                                <div class="daw-menu-item" id="daw-menu-settings-autosave-10m" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
+                                    <span>Auto-Save: Every 10 Minutes</span>
+                                    <span id="daw-settings-autosave-10m-check" style="display: none; color: #34d399;">✓</span>
+                                </div>
+                                <div class="daw-menu-item" id="daw-menu-settings-autosave-30m" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
+                                    <span>Auto-Save: Every 30 Minutes</span>
+                                    <span id="daw-settings-autosave-30m-check" style="display: none; color: #34d399;">✓</span>
                                 </div>
                                 <div class="daw-menu-item" id="daw-menu-settings-autosave-off" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; transition: background 0.12s;">
                                     <span>Auto-Save: Disabled / Off</span>
@@ -616,7 +618,7 @@
                             <div id="daw-menu-dropdown-help" class="daw-menu-dropdown" style="display: none; position: absolute; top: calc(100% + 2px); left: 0; background: #0c0f17; border: 1px solid rgba(255,255,255,0.14); border-radius: 6px; min-width: 250px; box-shadow: 0 16px 36px rgba(0,0,0,0.92); z-index: 3100; padding: 4px 0;">
                                 <div class="daw-menu-item" id="daw-menu-help-welcome" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; font-weight: 600; transition: background 0.12s;">
                                     <span>Welcome Guide &amp; VIP Recognition...</span>
-                                    <span style="font-size: 9px; color: #e5e7eb; font-family: monospace; font-weight: 700; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); padding: 1px 5px; border-radius: 3px;">v1.8.41</span>
+                                    <span style="font-size: 9px; color: #e5e7eb; font-family: monospace; font-weight: 700; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); padding: 1px 5px; border-radius: 3px;">v1.8.42</span>
                                 </div>
                                 <div class="daw-menu-item" id="daw-menu-help-shortcuts" style="padding: 6px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #fff; font-size: 11.5px; font-weight: 600; transition: background 0.12s;">
                                     <span>Keyboard Shortcuts Guide...</span>
@@ -635,18 +637,18 @@
                                         <img src="/logo.png" alt="LocalFilm Ireland Logo" title="LocalFilm Ireland" style="height: 15px; width: auto; object-fit: contain; filter: drop-shadow(0 1px 4px rgba(0,0,0,0.6));" onerror="this.onerror=null; this.src='/logo.png';" />
                                         About Alan Joyce &amp; LocalFilm
                                     </span>
-                                    <span style="font-size: 9px; color: #e5e7eb; font-family: monospace; font-weight: 700; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); padding: 1px 5px; border-radius: 3px;">v1.8.41</span>
+                                    <span style="font-size: 9px; color: #e5e7eb; font-family: monospace; font-weight: 700; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); padding: 1px 5px; border-radius: 3px;">v1.8.42</span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Right Quick Layout Indicator, Release Badge & Menubar Close Button -->
                         <div style="margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 10px; color: rgba(255,255,255,0.5);">
-                            <span id="daw-autosave-indicator-pill" style="padding: 1px 6px; background: rgba(52, 211, 153, 0.1); color: #34d399; border-radius: 3px; border: 1px solid rgba(52, 211, 153, 0.25); font-family: monospace; font-size: 9px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                            <span id="daw-autosave-indicator-pill" style="padding: 1px 6px; background: rgba(52, 211, 153, 0.1); color: #34d399; border-radius: 3px; border: 1px solid rgba(52, 211, 153, 0.25); font-family: monospace; font-size: 9px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
                                 <span style="width: 5px; height: 5px; border-radius: 50%; background: #34d399; box-shadow: 0 0 5px #34d399;"></span>
-                                AUTOSAVE 1M
+                                AUTOSAVE 5M
                             </span>
-                            <span style="padding: 1px 6px; background: rgba(255,255,255,0.08); color: #e5e7eb; border-radius: 3px; border: 1px solid rgba(255,255,255,0.18); font-family: monospace; font-size: 9.5px; font-weight: 700;">v1.8.41</span>
+                            <span style="padding: 1px 6px; background: rgba(255,255,255,0.08); color: #e5e7eb; border-radius: 3px; border: 1px solid rgba(255,255,255,0.18); font-family: monospace; font-size: 9.5px; font-weight: 700;">v1.8.42</span>
                             <span id="daw-layout-status-tag" style="padding: 1px 6px; background: rgba(255,255,255,0.06); border-radius: 3px; border: 1px solid rgba(255,255,255,0.1); font-weight: 700; letter-spacing: 0.5px;">STUDIO MODE</span>
                             <button id="daw-menubar-close-btn" title="Close DAW &amp; Return to LocalFilm.online" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); width: 22px; height: 22px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s; margin-left: 2px;" onmouseover="this.style.background='rgba(255,69,58,0.2)'; this.style.borderColor='#ff453a'; this.style.color='#ff453a';" onmouseout="this.style.background='rgba(255,255,255,0.04)'; this.style.borderColor='rgba(255,255,255,0.1)'; this.style.color='rgba(255,255,255,0.7)';">
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -1219,22 +1221,22 @@
                                     </button>
                                 </div>
 
-                                <button id="timeline-cut-btn" title="Split Selected Clip at Playhead (S or Cmd+B)" style="height: 28px; box-sizing: border-box; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.18); color: #ffffff; padding: 0 9px; border-radius: 5px; font-size: 11px; font-weight: 750; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: background 0.15s;">
+                                <button id="timeline-cut-btn" title="Split Selected Clip at Playhead (S or Cmd+B)" style="height: 28px; box-sizing: border-box; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); color: #e2e8f0; padding: 0 9px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.background='rgba(255,255,255,0.05)';">
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
                                     Split Clip
                                 </button>
 
-                                <button id="timeline-edit-btn" title="Inspect, Rename, Color &amp; Tag Selected Clip (or Double-Click Clip)" style="height: 28px; box-sizing: border-box; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.18); color: #ffffff; padding: 0 9px; border-radius: 5px; font-size: 11px; font-weight: 750; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: background 0.15s;">
+                                <button id="timeline-edit-btn" title="Inspect, Rename, Color &amp; Tag Selected Clip (or Double-Click Clip)" style="height: 28px; box-sizing: border-box; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); color: #e2e8f0; padding: 0 9px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.background='rgba(255,255,255,0.05)';">
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                                     Edit Clip
                                 </button>
 
-                                <button id="timeline-crossfade-btn" title="Apply Audio Crossfade Between Selected Clips (X)" style="height: 28px; box-sizing: border-box; background: rgba(10, 132, 255, 0.12); border: 1px solid rgba(10, 132, 255, 0.35); color: #0a84ff; padding: 0 9px; border-radius: 5px; font-size: 11px; font-weight: 750; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;">
+                                <button id="timeline-crossfade-btn" title="Apply Audio Crossfade Between Selected Clips (X)" style="height: 28px; box-sizing: border-box; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); color: #e2e8f0; padding: 0 9px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.background='rgba(255,255,255,0.05)';">
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M4 19L20 5M4 5l16 14"/></svg>
                                     Crossfade
                                 </button>
 
-                                <button id="timeline-delete-btn" title="Delete Selected Clip(s) (Delete / Backspace)" style="height: 28px; box-sizing: border-box; background: rgba(255, 69, 58, 0.12); border: 1px solid rgba(255, 69, 58, 0.3); color: #f87171; padding: 0 8px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: background 0.15s;">
+                                <button id="timeline-delete-btn" title="Delete Selected Clip(s) (Delete / Backspace)" style="height: 28px; box-sizing: border-box; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); color: #e2e8f0; padding: 0 8px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;" onmouseover="this.style.background='rgba(255,69,58,0.15)'; this.style.borderColor='rgba(255,69,58,0.4)'; this.style.color='#fca5a5';" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.borderColor='rgba(255,255,255,0.12)'; this.style.color='#e2e8f0';">
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                                     Delete
                                 </button>
@@ -1244,19 +1246,19 @@
 
                             <!-- Punch Region In / Out & Marker Module -->
                             <div id="daw-top-module-punch" style="display: inline-flex; align-items: center; gap: 4px;">
-                                <button id="timeline-punch-in-btn" title="Set Punch-In Region Start at Playhead (I)" style="height: 28px; box-sizing: border-box; background: rgba(10, 132, 255, 0.12); border: 1px solid rgba(10, 132, 255, 0.35); color: #0a84ff; padding: 0 7px; border-radius: 5px; font-size: 11px; font-weight: 750; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;">
+                                <button id="timeline-punch-in-btn" title="Set Punch-In Region Start at Playhead (I)" style="height: 28px; box-sizing: border-box; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); color: #e2e8f0; padding: 0 7px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.background='rgba(255,255,255,0.05)';">
                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="15 18 9 12 15 6"/><line x1="19" y1="6" x2="19" y2="18"/></svg>
                                     In [I]
                                 </button>
-                                <button id="timeline-punch-out-btn" title="Set Punch-Out Region End at Playhead (O)" style="height: 28px; box-sizing: border-box; background: rgba(10, 132, 255, 0.12); border: 1px solid rgba(10, 132, 255, 0.35); color: #0a84ff; padding: 0 7px; border-radius: 5px; font-size: 11px; font-weight: 750; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;">
+                                <button id="timeline-punch-out-btn" title="Set Punch-Out Region End at Playhead (O)" style="height: 28px; box-sizing: border-box; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); color: #e2e8f0; padding: 0 7px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.background='rgba(255,255,255,0.05)';">
                                     Out [O]
                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/><line x1="5" y1="6" x2="5" y2="18"/></svg>
                                 </button>
-                                <button id="timeline-punch-clear-btn" title="Clear Punch / Cycle Selection Region" style="height: 28px; box-sizing: border-box; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15); color: rgba(255,255,255,0.7); padding: 0 6px; border-radius: 5px; font-size: 10.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; transition: all 0.15s;">
+                                <button id="timeline-punch-clear-btn" title="Clear Punch / Cycle Selection Region" style="height: 28px; box-sizing: border-box; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); color: rgba(255,255,255,0.65); padding: 0 6px; border-radius: 5px; font-size: 10.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; transition: all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.background='rgba(255,255,255,0.05)';">
                                     <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                                     Clear
                                 </button>
-                                <button id="timeline-add-marker-btn" title="Drop Scene / Cue Marker at Playhead (M)" style="height: 28px; box-sizing: border-box; background: rgba(255, 159, 10, 0.12); border: 1px solid rgba(255, 159, 10, 0.35); color: #fbbf24; padding: 0 8px; border-radius: 5px; font-size: 11px; font-weight: 750; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: background 0.15s;">
+                                <button id="timeline-add-marker-btn" title="Drop Scene / Cue Marker at Playhead (M)" style="height: 28px; box-sizing: border-box; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); color: #e2e8f0; padding: 0 8px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.background='rgba(255,255,255,0.05)';">
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                                     + Marker
                                 </button>
@@ -1266,11 +1268,11 @@
 
                             <!-- Video Preview & ADR Booth Module -->
                             <div id="daw-top-module-video-adr" style="display: inline-flex; align-items: center; gap: 4px;">
-                                <button id="timeline-video-toggle-btn" title="Toggle Motion Picture Video Track Preview Monitor (V)" style="height: 28px; box-sizing: border-box; background: rgba(10, 132, 255, 0.12); border: 1px solid rgba(10, 132, 255, 0.35); color: #0a84ff; padding: 0 8px; border-radius: 5px; font-size: 11px; font-weight: 750; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: background 0.15s;">
+                                <button id="timeline-video-toggle-btn" title="Toggle Motion Picture Video Track Preview Monitor (V)" style="height: 28px; box-sizing: border-box; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); color: #e2e8f0; padding: 0 8px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.background='rgba(255,255,255,0.05)';">
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
                                     Video
                                 </button>
-                                <button id="timeline-adr-toggle-btn" title="Toggle ADR Dialogue Cue &amp; 3-Beep Teleprompter System" style="height: 28px; box-sizing: border-box; background: rgba(94, 92, 230, 0.12); border: 1px solid rgba(94, 92, 230, 0.35); color: #c084fc; padding: 0 8px; border-radius: 5px; font-size: 11px; font-weight: 750; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: background 0.15s;">
+                                <button id="timeline-adr-toggle-btn" title="Toggle ADR Dialogue Cue &amp; 3-Beep Teleprompter System" style="height: 28px; box-sizing: border-box; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); color: #e2e8f0; padding: 0 8px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.background='rgba(255,255,255,0.05)';">
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
                                     ADR Booth
                                 </button>
@@ -1279,7 +1281,7 @@
 
                         <!-- Center: Voice-Over / Mic Input & Target Track Selector (Strictly 28px Height) -->
                         <div id="daw-top-module-mic-select" style="display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.12); border-radius: 5px; padding: 0 7px; height: 28px; box-sizing: border-box; flex-shrink: 0;" title="Select Microphone and Destination Track for Overdub Recording">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ff453a" stroke-width="2" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
                             <select id="daw-record-mic-select" title="Microphone Input Device" style="background: none; border: none; color: #ffffff; font-size: 11px; font-weight: 600; cursor: pointer; outline: none; max-width: 125px; text-overflow: ellipsis; white-space: nowrap;">
                                 <option value="">Detecting Mic...</option>
                             </select>
@@ -1287,7 +1289,7 @@
                             <div style="width: 1px; height: 14px; background: rgba(255,255,255,0.15);"></div>
 
                             <span style="font-size: 9.5px; font-weight: 800; color: rgba(255,255,255,0.5); letter-spacing: 0.5px;">INTO:</span>
-                            <select id="daw-record-track-select" title="Target Destination Track (or Auto-Create New Track)" style="background: none; border: none; color: #0a84ff; font-size: 11px; font-weight: 750; cursor: pointer; outline: none; max-width: 140px; text-overflow: ellipsis; white-space: nowrap;">
+                            <select id="daw-record-track-select" title="Target Destination Track (or Auto-Create New Track)" style="background: none; border: none; color: #e2e8f0; font-size: 11px; font-weight: 700; cursor: pointer; outline: none; max-width: 140px; text-overflow: ellipsis; white-space: nowrap;">
                                 <option value="__new__">+ New Track (Auto)</option>
                                 <option value="host">Presenter (Host)</option>
                             </select>
@@ -1302,17 +1304,17 @@
                         <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
                             <!-- Scrubbing, Snap & Ripple Modes Module -->
                             <div id="daw-top-module-timeline-modes" style="display: inline-flex; align-items: center; gap: 4px;">
-                                <button id="timeline-scrub-toggle-btn" title="Toggle Audible Playhead Scrubbing (Listen while dragging playhead)" style="height: 28px; box-sizing: border-box; background: rgba(48, 209, 88, 0.15); border: 1px solid rgba(48, 209, 88, 0.4); color: #34d399; padding: 0 8px; border-radius: 5px; font-size: 11px; font-weight: 750; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;">
+                                <button id="timeline-scrub-toggle-btn" title="Toggle Audible Playhead Scrubbing (Listen while dragging playhead)" style="height: 28px; box-sizing: border-box; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); color: #e2e8f0; padding: 0 8px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.background='rgba(255,255,255,0.05)';">
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
                                     <span id="timeline-scrub-label">Scrub: ON</span>
                                 </button>
 
-                                <button id="timeline-snap-btn" title="Toggle Magnetic Snapping (Grid &amp; Clip Edges)" style="height: 28px; box-sizing: border-box; background: rgba(10, 132, 255, 0.15); border: 1px solid rgba(10, 132, 255, 0.35); color: #0a84ff; padding: 0 8px; border-radius: 5px; font-size: 11px; font-weight: 750; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;">
+                                <button id="timeline-snap-btn" title="Toggle Magnetic Snapping (Grid &amp; Clip Edges)" style="height: 28px; box-sizing: border-box; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); color: #e2e8f0; padding: 0 8px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.background='rgba(255,255,255,0.05)';">
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"/><line x1="4" y1="3" x2="8" y2="3"/><line x1="16" y1="3" x2="20" y2="3"/></svg>
                                     <span id="timeline-snap-label">Snap: All</span>
                                 </button>
 
-                                <button id="timeline-ripple-toggle-btn" title="Toggle Ripple Editing Mode (Automatically shifts subsequent clips to close gaps on delete/cut)" style="height: 28px; box-sizing: border-box; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.16); color: rgba(255, 255, 255, 0.75); padding: 0 8px; border-radius: 5px; font-size: 11px; font-weight: 750; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;">
+                                <button id="timeline-ripple-toggle-btn" title="Toggle Ripple Editing Mode (Automatically shifts subsequent clips to close gaps on delete/cut)" style="height: 28px; box-sizing: border-box; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.7); padding: 0 8px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.background='rgba(255,255,255,0.05)';">
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 17l-5-5 5-5"/><path d="M18 17l-5-5 5-5"/></svg>
                                     <span id="timeline-ripple-label">Ripple: OFF</span>
                                 </button>
@@ -1320,17 +1322,17 @@
 
                             <!-- Track Height & Wave Gain Scale Module -->
                             <div id="daw-top-module-view-scales" style="display: inline-flex; align-items: center; gap: 4px;">
-                                <button id="timeline-track-height-btn" title="Cycle Track Height (Compact 56px / Normal 74px / Expanded 110px / Giant 160px)" style="height: 28px; box-sizing: border-box; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.16); color: #ffffff; padding: 0 8px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;">
+                                <button id="timeline-track-height-btn" title="Cycle Track Height (Compact 56px / Normal 74px / Expanded 110px / Giant 160px)" style="height: 28px; box-sizing: border-box; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: #e2e8f0; padding: 0 8px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.background='rgba(255,255,255,0.05)';">
                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="7 15 12 20 17 15"/><polyline points="7 9 12 4 17 9"/></svg>
                                     <span id="timeline-track-height-label">74px</span>
                                 </button>
 
-                                <button id="timeline-wave-gain-btn" title="Visual Waveform Amplitude Zoom (1x, 1.5x, 2x, 3x)" style="height: 28px; box-sizing: border-box; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.16); color: #ffffff; padding: 0 8px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;">
+                                <button id="timeline-wave-gain-btn" title="Visual Waveform Amplitude Zoom (1x, 1.5x, 2x, 3x)" style="height: 28px; box-sizing: border-box; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: #e2e8f0; padding: 0 8px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.background='rgba(255,255,255,0.05)';">
                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 12h2l3-6 4 12 3-8 2 4 2-2h4"/></svg>
                                     <span id="timeline-wave-gain-label">1x</span>
                                 </button>
 
-                                <button id="timeline-wave-color-btn" type="button" title="Toggle Sound Files in Colour vs Monochrome B&amp;W (Press to Switch)" style="height: 28px; box-sizing: border-box; background: rgba(10, 132, 255, 0.12); border: 1px solid rgba(10, 132, 255, 0.4); color: #0a84ff; padding: 0 8px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;">
+                                <button id="timeline-wave-color-btn" type="button" title="Toggle Sound Files in Colour vs Monochrome B&amp;W (Press to Switch)" style="height: 28px; box-sizing: border-box; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: #e2e8f0; padding: 0 8px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.background='rgba(255,255,255,0.05)';">
                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20z"/></svg>
                                     <span id="timeline-wave-color-label">WAVE: COLOR</span>
                                 </button>
