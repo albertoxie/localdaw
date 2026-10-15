@@ -1,0 +1,21 @@
+{
+  "name": "LocalFilm Studio DAW",
+  "short_name": "Studio DAW",
+  "description": "Professional Multi-Track Digital Audio Workstation & Audio Ingestion Inspector for Cinema & Podcasts",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#06080e",
+  "theme_color": "#06080e",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
