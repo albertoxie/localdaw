@@ -7528,16 +7528,20 @@ export async function initStandaloneDaw() {
         addNewEmptyTrack('music');
     });
 
+    // DAW Real-Time Engine Transport Variables
+    let dawMediaRecorder = null;
+    let dawRecordingStream = null;
+    let dawRecordingChunks = [];
+    let dawRecordingStartTime = 0;
+    let dawRecordingTargetTrackId = 'host';
+    let dawRecordingClipEl = null;
+
+    let startDawEngineTicker = () => {};
+    let stopDawEngineTicker = () => {};
+
     // Stop DAW Playback
     const stopDawPlayback = (resetToStart = false) => {
-        if (daw.isRecording) {
-            stopDawRecording();
-        }
         daw.isPlaying = false;
-        if (daw.animId) {
-            cancelAnimationFrame(daw.animId);
-            daw.animId = null;
-        }
         daw.activeSources.forEach(s => {
             try { s.stop(); } catch (e) {}
         });
@@ -7545,8 +7549,10 @@ export async function initStandaloneDaw() {
         teardownTrackBuses();
         if (resetToStart) {
             daw.playhead = 0;
+            updateDawPlayhead();
         }
         if (!daw.isRecording) {
+            stopDawEngineTicker();
             setStudioStatus('Ready', 'ready', false);
         }
         const playBtn = document.getElementById('timeline-play-btn');
@@ -7745,6 +7751,461 @@ export async function initStandaloneDaw() {
         }
     };
 
+    // High-Precision Unified Transport Ticker (Drives Playback & Live Recording Indivisibly)
+    const tickDawEngine = () => {
+        if (!daw.isPlaying && !daw.isRecording) {
+            daw.animId = null;
+            return;
+        }
+
+        try {
+            const now = (daw.audioCtx && daw.audioCtx.state === 'running') ? daw.audioCtx.currentTime : (performance.now() / 1000);
+            if (daw.startEngineTime === null || daw.startEngineTime === undefined) {
+                daw.startEngineTime = now;
+                daw.startPlayhead = Number.isFinite(daw.playhead) ? daw.playhead : 0;
+            }
+            const elapsed = Math.max(0, now - daw.startEngineTime);
+            daw.playhead = daw.startPlayhead + elapsed;
+
+            // Single-pass live microphone sampling for recording (shared across waveform, toolbar meter, master VU, and track mini VU)
+            let liveMicPeak = 0;
+            let liveMicData = null;
+            if (daw.isRecording && daw._liveRecAnalyser) {
+                liveMicData = daw._liveRecTimeData || new Uint8Array(daw._liveRecAnalyser.fftSize);
+                daw._liveRecAnalyser.getByteTimeDomainData(liveMicData);
+                let minVal = 128, maxVal = 128;
+                for (let i = 0; i < liveMicData.length; i++) {
+                    const val = liveMicData[i];
+                    if (val < minVal) minVal = val;
+                    if (val > maxVal) maxVal = val;
+                }
+                liveMicPeak = Math.max((maxVal - 128) / 128, (128 - minVal) / 128);
+
+                const elapsedSec = Math.max(0, daw.playhead - dawRecordingStartTime);
+                const PEAK_BUCKET_SEC = 0.02; // 20ms precision (50 slices/sec)
+                const curBucket = Math.floor(elapsedSec / PEAK_BUCKET_SEC);
+                if (daw._liveRecPeaks) {
+                    if (daw._lastRecBucket === undefined || daw._lastRecBucket < 0) daw._lastRecBucket = 0;
+                    for (let k = daw._lastRecBucket; k <= curBucket; k++) {
+                        daw._liveRecPeaks[k] = Math.max(daw._liveRecPeaks[k] || 0, liveMicPeak);
+                    }
+                    daw._lastRecBucket = curBucket;
+                }
+
+                // Directly update toolbar live mic level bar from the single sampled peak
+                const recMicBar = document.getElementById('daw-rec-mic-level-bar');
+                if (recMicBar) {
+                    recMicBar.style.width = `${Math.min(100, Math.round(liveMicPeak * 190))}%`;
+                }
+            }
+
+            // Expand live recording clip width with playhead in real time & draw stationary live waveform
+            if (daw.isRecording && dawRecordingClipEl) {
+                const elapsedSec = Math.max(0, daw.playhead - dawRecordingStartTime);
+                const recWidth = Math.max(20, elapsedSec * daw.zoom);
+                dawRecordingClipEl.style.width = `${recWidth}px`;
+
+                const canvas = dawRecordingClipEl.querySelector('.daw-live-waveform-canvas');
+                if (canvas && daw._liveRecPeaks) {
+                    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                    const clientW = Math.max(20, Math.floor(recWidth));
+                    const clientH = Math.max(30, (daw.laneHeight ? daw.laneHeight - 8 : 56));
+
+                    // Buffer canvas width in 128px chunks so GPU surface texture is NOT reallocated on every pixel
+                    const targetBufferW = Math.ceil((clientW + 64) / 128) * 128;
+                    if (!canvas._bufW || canvas._bufW < targetBufferW) {
+                        canvas._bufW = targetBufferW;
+                        canvas.width = Math.floor(targetBufferW * dpr);
+                        canvas.height = Math.floor(clientH * dpr);
+                        canvas.style.width = `${targetBufferW}px`;
+                        canvas.style.height = `${clientH}px`;
+                    }
+
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        ctx.save();
+                        ctx.scale(dpr, dpr);
+                        ctx.clearRect(0, 0, (canvas._bufW || clientW) + 10, clientH);
+
+                        const barWidth = 2.0;
+                        const barGap = 1.0;
+                        const step = barWidth + barGap;
+                        const activeBars = Math.floor((clientW - 4) / step);
+
+                        if (activeBars > 0) {
+                            const midY = clientH / 2;
+                            const PEAK_BUCKET_SEC = 0.02;
+                            // Sleek monochrome high-contrast bars matching dark cinematic aesthetic rule
+                            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                            ctx.beginPath();
+                            for (let b = 0; b < activeBars; b++) {
+                                // Fixed timeline coordinate: bar b always corresponds to fixed time (b * step) / zoom
+                                const barTime = (b * step) / (daw.zoom || 15);
+                                const bIdx = Math.floor(barTime / PEAK_BUCKET_SEC);
+                                const rawVal = (daw._liveRecPeaks && daw._liveRecPeaks[bIdx] !== undefined)
+                                    ? daw._liveRecPeaks[bIdx]
+                                    : (b >= activeBars - 2 ? liveMicPeak : 0.08);
+                                const pVal = Math.max(0.08, Math.min(1.0, rawVal));
+                                const barH = Math.max(4, Math.round(pVal * (clientH - 12)));
+                                const bx = Math.round(b * step);
+                                const by = Math.round(midY - barH / 2);
+                                ctx.rect(bx, by, 2, barH);
+                            }
+                            ctx.fill();
+                        }
+                        ctx.restore();
+                    }
+                }
+            }
+
+            const hasActivePunch = daw.punch && daw.punch.isActive && typeof daw.punch.inTime === 'number' && typeof daw.punch.outTime === 'number';
+
+            if (daw.isRecording) {
+                if (daw.playhead >= daw.duration - 2) {
+                    daw.duration = Math.max(daw.duration + 30, Math.ceil(daw.playhead + 30));
+                    renderDawRuler();
+                }
+            } else if (hasActivePunch && daw.playhead >= daw.punch.outTime) {
+                if (daw.isLooping) {
+                    stopDawPlayback(false);
+                    daw.playhead = daw.punch.inTime;
+                    updateDawPlayhead();
+                    startDawPlayback();
+                    return;
+                } else {
+                    stopDawPlayback();
+                    daw.playhead = daw.punch.outTime;
+                    updateDawPlayhead();
+                    return;
+                }
+            } else if (daw.playhead >= daw.duration) {
+                if (daw.isLooping) {
+                    stopDawPlayback(false);
+                    daw.playhead = 0;
+                    updateDawPlayhead();
+                    startDawPlayback();
+                    return;
+                } else {
+                    stopDawPlayback();
+                    daw.playhead = daw.duration;
+                    updateDawPlayhead();
+                    return;
+                }
+            }
+            updateDawPlayhead();
+
+            // Synthesize Audible Metronome Ticks if enabled (BPM tempo based)
+            if (daw.isMetronomeEnabled) {
+                const beatInterval = 60 / (daw.bpm || 120);
+                const currentBeatIndex = Math.floor(daw.playhead / beatInterval);
+                if (currentBeatIndex !== daw._lastMetronomeBeat && currentBeatIndex >= 0) {
+                    daw._lastMetronomeBeat = currentBeatIndex;
+                    const isDownbeat = (currentBeatIndex % 4) === 0;
+                    playMetronomeClick(isDownbeat);
+                }
+            }
+
+            // Sample Master Output Stereo Peak VU Meter, Live Mic Recording & LUFS Loudness
+            if (daw.masterAnalyser || (daw.isRecording && daw._liveRecAnalyser)) {
+                let peak = 0;
+                let sumSquare = 0;
+                let totalSamples = 0;
+                let primaryData = null;
+
+                if (daw.masterAnalyser) {
+                    const data = new Uint8Array(daw.masterAnalyser.frequencyBinCount);
+                    daw.masterAnalyser.getByteTimeDomainData(data);
+                    for (let i = 0; i < data.length; i++) {
+                        const dev = (data[i] - 128) / 128;
+                        const absDev = Math.abs(dev);
+                        if (absDev > peak) peak = absDev;
+                        sumSquare += dev * dev;
+                    }
+                    totalSamples += data.length;
+                    primaryData = data;
+                }
+
+                // Incorporate single-sampled live mic reading into Master VU when recording
+                if (daw.isRecording && daw._liveRecAnalyser && liveMicData) {
+                    if (liveMicPeak > peak) peak = liveMicPeak;
+                    for (let i = 0; i < liveMicData.length; i++) {
+                        const dev = (liveMicData[i] - 128) / 128;
+                        sumSquare += dev * dev;
+                    }
+                    totalSamples += liveMicData.length;
+                    if (!primaryData) primaryData = liveMicData;
+                }
+
+                const vuBar = document.getElementById('daw-master-vu-bar');
+                const vuDb = document.getElementById('daw-master-vu-db');
+                const lufsBadge = document.getElementById('daw-master-lufs-badge');
+
+                if (vuBar) vuBar.style.width = `${Math.min(100, Math.round(peak * 100))}%`;
+                const dbStr = peak > 0.001 ? (20 * Math.log10(peak)).toFixed(1) : '-inf';
+                if (vuDb) {
+                    vuDb.textContent = dbStr === '-inf' ? '-∞ dB' : `${dbStr} dB`;
+                }
+
+                // Animate Standalone / Docked Studio Master VU Window (Dual Bars L/R & Clip)
+                const vuBarL = document.getElementById('daw-vu-bar-l');
+                const vuBarR = document.getElementById('daw-vu-bar-r');
+                const vuDbL = document.getElementById('daw-vu-db-l');
+                const vuDbR = document.getElementById('daw-vu-db-r');
+                const vuClip = document.getElementById('daw-vu-clip-badge');
+                const vuWindowLufs = document.getElementById('daw-vu-lufs-window-badge');
+
+                if (vuBarL) vuBarL.style.height = `${Math.min(100, Math.round(peak * 100))}%`;
+                const deckMasterVuL = document.getElementById('daw-deck-mixer-master-vu-l');
+                if (deckMasterVuL) deckMasterVuL.style.height = `${Math.min(100, Math.round(peak * 100))}%`;
+                const peakR = Math.max(0, Math.min(1.0, peak * (0.96 + (((primaryData ? primaryData[0] : 128)) % 7) * 0.01)));
+                if (vuBarR) {
+                    vuBarR.style.height = `${Math.min(100, Math.round(peakR * 100))}%`;
+                }
+                const deckMasterVuR = document.getElementById('daw-deck-mixer-master-vu-r');
+                if (deckMasterVuR) deckMasterVuR.style.height = `${Math.min(100, Math.round(peakR * 100))}%`;
+                if (vuDbL) vuDbL.textContent = dbStr === '-inf' ? '-∞' : `${dbStr}dB`;
+                if (vuDbR) vuDbR.textContent = dbStr === '-inf' ? '-∞' : `${dbStr}dB`;
+                if (vuClip) {
+                    vuClip.style.opacity = peak >= 0.98 ? '1' : '0';
+                }
+
+                if (lufsBadge && totalSamples > 0) {
+                    const rms = Math.sqrt(sumSquare / totalSamples);
+                    // EBU R128 / ITU-R BS.1770 approximation: LUFS ~= 20*log10(RMS) - 0.69
+                    if (rms > 0.0005) {
+                        const lufs = (20 * Math.log10(rms) - 0.69).toFixed(1);
+                        daw.masterLufs = parseFloat(lufs);
+                        lufsBadge.textContent = `${lufs} LUFS`;
+                        if (vuWindowLufs) vuWindowLufs.textContent = `${lufs} LUFS`;
+                        if (lufs > -14.0) {
+                            lufsBadge.style.color = '#f87171'; // Too loud for podcast standard (-14 / -16 LUFS)
+                            if (vuWindowLufs) vuWindowLufs.style.color = '#f87171';
+                        } else if (lufs >= -18.0) {
+                            lufsBadge.style.color = '#34d399'; // Optimal broadcast target range
+                            if (vuWindowLufs) vuWindowLufs.style.color = '#34d399';
+                        } else {
+                            lufsBadge.style.color = '#0a84ff'; // Quiet speech/ambient
+                            if (vuWindowLufs) vuWindowLufs.style.color = '#0a84ff';
+                        }
+
+                        // Loudness Target compliance calculation
+                        const targetBadge = document.getElementById('daw-vu-target-compliance-badge');
+                        if (targetBadge && _activeVuTarget !== 'off') {
+                            const targetVal = _activeVuTarget === 'stream' ? -14.0 : -24.0;
+                            const diff = parseFloat(lufs) - targetVal;
+                            if (Math.abs(diff) <= 1.0) {
+                                targetBadge.textContent = 'ON TARGET';
+                                targetBadge.style.color = '#34d399';
+                            } else if (diff > 1.0) {
+                                targetBadge.textContent = `+${diff.toFixed(1)} HOT`;
+                                targetBadge.style.color = '#ff9f0a';
+                            } else {
+                                targetBadge.textContent = `${diff.toFixed(1)} LOW`;
+                                targetBadge.style.color = '#0a84ff';
+                            }
+                        }
+                    } else {
+                        lufsBadge.textContent = '-∞ LUFS';
+                        lufsBadge.style.color = '#0a84ff';
+                        if (vuWindowLufs) {
+                            vuWindowLufs.textContent = '-∞ LUFS';
+                            vuWindowLufs.style.color = '#0a84ff';
+                        }
+                        const targetBadge = document.getElementById('daw-vu-target-compliance-badge');
+                        if (targetBadge && _activeVuTarget !== 'off') {
+                            targetBadge.textContent = 'SILENT';
+                            targetBadge.style.color = 'rgba(255,255,255,0.4)';
+                        }
+                    }
+                }
+
+                // Animate Individual Track Header Mini VU Level Meters
+                const trackKeys = Object.keys(daw.tracks);
+                trackKeys.forEach(tKey => {
+                    const trackObj = daw.tracks[tKey];
+                    const miniVuFill = document.getElementById(`track-mini-vu-fill-${tKey}`);
+                    const deckMixerVu = document.getElementById(`daw-mixer-vu-${tKey}`);
+                    if (!miniVuFill && !deckMixerVu) return;
+
+                    if (trackObj.muted) {
+                        if (miniVuFill) miniVuFill.style.height = '0%';
+                        if (deckMixerVu) deckMixerVu.style.height = '0%';
+                        return;
+                    }
+
+                    let tPeak = 0;
+                    if (daw.isRecording && (daw._recordTrackId === tKey || dawRecordingTargetTrackId === tKey) && daw._liveRecAnalyser) {
+                        tPeak = liveMicPeak;
+                    } else {
+                        const bus = daw.trackBuses && daw.trackBuses[tKey];
+                        if (bus && bus.analyser && bus.data) {
+                            bus.analyser.getByteTimeDomainData(bus.data);
+                            for (let bi = 0; bi < bus.data.length; bi++) {
+                                const bDev = Math.abs((bus.data[bi] - 128) / 128);
+                                if (bDev > tPeak) tPeak = bDev;
+                            }
+                        }
+                    }
+
+                    const pct = Math.min(100, Math.round(tPeak * 100));
+                    if (miniVuFill) miniVuFill.style.height = `${pct}%`;
+                    if (deckMixerVu) deckMixerVu.style.height = `${pct}%`;
+                });
+
+                // Live Telemetry Sync to Docked Bottom Studio Deck
+                const deckEl = document.getElementById('daw-bottom-studio-deck');
+                if (deckEl && !deckEl.classList.contains('collapsed')) {
+                    const activeId = daw._activeFxTrackId || (daw.tracks && Object.keys(daw.tracks)[0]) || 'host';
+                    const activeBus = daw.trackBuses && daw.trackBuses[activeId];
+                    const activeTrack = daw.tracks && daw.tracks[activeId];
+                    if (activeBus) {
+                        const compNode = activeBus.fx?.compNode;
+                        let grDb = 0;
+                        if (compNode) {
+                            const redVal = typeof compNode.reduction === 'number' ? compNode.reduction : (compNode.reduction?.value || 0);
+                            grDb = Math.abs(redVal);
+                        }
+                        const deckGrFill = document.getElementById('daw-deck-comp-gr-fill');
+                        const deckGrVal = document.getElementById('daw-deck-comp-gr-val');
+                        if (deckGrFill && deckGrVal) {
+                            if (grDb > 0.05) {
+                                deckGrFill.style.width = `${Math.min(100, (grDb / 18) * 100)}%`;
+                                deckGrVal.textContent = `-${grDb.toFixed(1)} dB`;
+                            } else {
+                                deckGrFill.style.width = '0%';
+                                deckGrVal.textContent = '0.0 dB';
+                            }
+                        }
+
+                        if (window._renderDeckEqCanvas && activeBus.analyser) {
+                            window._renderDeckEqCanvas(activeTrack?.plugins, activeBus.analyser);
+                        }
+
+                        if (window._renderDeckCompCanvas) {
+                            let trackPeakVal = 0;
+                            if (activeBus.data) {
+                                for (let bi = 0; bi < activeBus.data.length; bi++) {
+                                    const dev = Math.abs((activeBus.data[bi] - 128) / 128);
+                                    if (dev > trackPeakVal) trackPeakVal = dev;
+                                }
+                            }
+                            const devDb = trackPeakVal > 0.0001 ? 20 * Math.log10(trackPeakVal) : -100;
+                            window._renderDeckCompCanvas(activeTrack?.plugins, devDb, grDb);
+                        }
+                    }
+                }
+
+                // Real-Time Track DSP FX Rack Updates during timeline playback
+                const fxModal = document.getElementById('daw-track-fx-modal');
+                if (fxModal && fxModal.style.display !== 'none' && daw._activeFxTrackId) {
+                    const activeBus = daw.trackBuses && daw.trackBuses[daw._activeFxTrackId];
+                    if (activeBus) {
+                        // Compressor GR meter
+                        const compNode = activeBus.fx?.compNode;
+                        const grFill = document.getElementById('daw-fx-comp-gr-fill');
+                        const grValEl = document.getElementById('daw-fx-comp-gr-val');
+                        if (grFill && grValEl) {
+                            let grDb = 0;
+                            if (compNode && document.getElementById('daw-fx-comp-enable')?.checked) {
+                                const redVal = typeof compNode.reduction === 'number' ? compNode.reduction : (compNode.reduction?.value || 0);
+                                grDb = Math.abs(redVal);
+                            }
+                            if (grDb > 0.05) {
+                                grFill.style.width = `${Math.min(100, (grDb / 18) * 100)}%`;
+                                grValEl.textContent = `-${grDb.toFixed(1)} dB`;
+                            } else {
+                                grFill.style.width = '0%';
+                                grValEl.textContent = '0.0 dB';
+                            }
+                        }
+
+                        // Gate Status Pill
+                        const gatePill = document.getElementById('daw-fx-gate-status-pill');
+                        if (gatePill) {
+                            const isGateOn = !!document.getElementById('daw-fx-gate-enable')?.checked;
+                            const gThresh = parseFloat(document.getElementById('daw-fx-gate-thresh')?.value || -42);
+                            if (!isGateOn) {
+                                gatePill.textContent = 'BYPASS';
+                                gatePill.style.color = 'rgba(255,255,255,0.4)';
+                                gatePill.style.background = 'rgba(255,255,255,0.06)';
+                                gatePill.style.borderColor = 'rgba(255,255,255,0.1)';
+                            } else {
+                                let trackPeak = 0;
+                                if (activeBus.data) {
+                                    for (let bi = 0; bi < activeBus.data.length; bi++) {
+                                        const dev = Math.abs((activeBus.data[bi] - 128) / 128);
+                                        if (dev > trackPeak) trackPeak = dev;
+                                    }
+                                }
+                                const peakDb = trackPeak > 0.0001 ? 20 * Math.log10(trackPeak) : -100;
+                                if (peakDb < gThresh) {
+                                    gatePill.textContent = 'DUCKED';
+                                    gatePill.style.color = '#ff9f0a';
+                                    gatePill.style.background = 'rgba(255, 159, 10,0.18)';
+                                    gatePill.style.borderColor = 'rgba(255, 159, 10,0.4)';
+                                } else {
+                                    gatePill.textContent = 'OPEN';
+                                    gatePill.style.color = '#30d158';
+                                    gatePill.style.background = 'rgba(48, 209, 88,0.18)';
+                                    gatePill.style.borderColor = 'rgba(48, 209, 88,0.4)';
+                                }
+                            }
+                        }
+
+                        // Live EQ Spectrum Canvas & Telemetry Diagnostics
+                        if (activeBus.analyser) {
+                            renderEqCurveCanvas(activeBus.analyser);
+                            checkAndRenderFxTelemetry(activeBus.analyser, compNode);
+                        }
+                    }
+                }
+            }
+
+            // Deck Clip Inspector Playhead Scrub Sync
+            if (window._syncDeckClipScrub) {
+                window._syncDeckClipScrub(daw.playhead);
+            }
+
+            // Auto-scroll timeline viewport smoothly to follow playhead in real-time without layout reflows
+            const viewport = document.getElementById('timeline-scroll-viewport');
+            if (viewport) {
+                const playheadPx = daw.playhead * daw.zoom;
+                const vpClientW = viewport._cachedWidth || viewport.clientWidth;
+                if (!viewport._cachedWidth) viewport._cachedWidth = vpClientW;
+
+                const leadMargin = daw.isRecording
+                    ? Math.min(220, vpClientW * 0.35)
+                    : Math.min(300, vpClientW * 0.45);
+                const scrollTrigger = viewport.scrollLeft + vpClientW - leadMargin;
+                if (playheadPx > scrollTrigger) {
+                    viewport.scrollLeft = playheadPx - (vpClientW - leadMargin);
+                } else if (playheadPx < viewport.scrollLeft) {
+                    viewport.scrollLeft = Math.max(0, playheadPx - 60);
+                }
+            }
+        } catch (tickErr) {
+            console.error('[DAW Transport Engine] Error inside tick:', tickErr);
+        }
+
+        daw.animId = requestAnimationFrame(tickDawEngine);
+    };
+
+    startDawEngineTicker = () => {
+        if (daw.animId) return;
+        const now = (daw.audioCtx && daw.audioCtx.state === 'running') ? daw.audioCtx.currentTime : (performance.now() / 1000);
+        daw.startEngineTime = now;
+        daw.startPlayhead = Number.isFinite(daw.playhead) ? daw.playhead : 0;
+        daw.animId = requestAnimationFrame(tickDawEngine);
+    };
+
+    stopDawEngineTicker = () => {
+        if (daw.animId) {
+            cancelAnimationFrame(daw.animId);
+            daw.animId = null;
+        }
+        daw.startEngineTime = null;
+    };
+
     // Start DAW Playback with Volume Keyframing Automation & Master Bus Peak VU Metering
     const startDawPlayback = async () => {
         if (daw.isPlaying) return;
@@ -7842,7 +8303,7 @@ export async function initStandaloneDaw() {
                 }
             }));
             renderDawClips();
-            if (playBtnText) playBtnText.textContent = 'Play';
+            if (playBtnText) playBtnText.textContent = 'PAUSE';
         }
 
         daw.activeSources = [];
@@ -7926,8 +8387,6 @@ export async function initStandaloneDaw() {
         }
 
         daw.isPlaying = true;
-        daw.startCtxTime = daw.audioCtx.currentTime;
-        daw.startPlayhead = daw.playhead;
         if (!daw.isRecording) {
             setStudioStatus('Playing Timeline', 'playing', false);
         }
@@ -7953,430 +8412,7 @@ export async function initStandaloneDaw() {
             } catch (vErr) {}
         }
 
-        const tick = () => {
-            if (!daw.isPlaying) return;
-            try {
-                const elapsed = daw.audioCtx.currentTime - daw.startCtxTime;
-                daw.playhead = daw.startPlayhead + elapsed;
-
-                // Single-pass live microphone sampling for recording (shared across waveform, toolbar meter, master VU, and track mini VU)
-                let liveMicPeak = 0;
-                let liveMicData = null;
-                if (daw.isRecording && daw._liveRecAnalyser) {
-                    liveMicData = daw._liveRecTimeData || new Uint8Array(daw._liveRecAnalyser.fftSize);
-                    daw._liveRecAnalyser.getByteTimeDomainData(liveMicData);
-                    let minVal = 128, maxVal = 128;
-                    for (let i = 0; i < liveMicData.length; i++) {
-                        const val = liveMicData[i];
-                        if (val < minVal) minVal = val;
-                        if (val > maxVal) maxVal = val;
-                    }
-                    liveMicPeak = Math.max((maxVal - 128) / 128, (128 - minVal) / 128);
-
-                    const elapsedSec = Math.max(0, daw.playhead - dawRecordingStartTime);
-                    const PEAK_BUCKET_SEC = 0.02; // 20ms precision (50 slices/sec)
-                    const curBucket = Math.floor(elapsedSec / PEAK_BUCKET_SEC);
-                    if (daw._liveRecPeaks) {
-                        daw._liveRecPeaks[curBucket] = Math.max(daw._liveRecPeaks[curBucket] || 0, liveMicPeak);
-                    }
-
-                    // Directly update toolbar live mic level bar from the single sampled peak
-                    const recMicBar = document.getElementById('daw-rec-mic-level-bar');
-                    if (recMicBar) {
-                        recMicBar.style.width = `${Math.min(100, Math.round(liveMicPeak * 190))}%`;
-                    }
-                }
-
-                // Expand live recording clip width with playhead in real time & draw stationary live waveform
-                if (daw.isRecording && dawRecordingClipEl) {
-                    const elapsedSec = Math.max(0, daw.playhead - dawRecordingStartTime);
-                    const recWidth = Math.max(20, elapsedSec * daw.zoom);
-                    dawRecordingClipEl.style.width = `${recWidth}px`;
-
-                    const canvas = dawRecordingClipEl.querySelector('.daw-live-waveform-canvas');
-                    if (canvas && daw._liveRecPeaks) {
-                        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-                        const clientW = Math.max(20, Math.floor(recWidth));
-                        // Zero layout thrashing: calculate height directly from laneHeight state without touching DOM geometry
-                        const clientH = Math.max(30, (daw.laneHeight ? daw.laneHeight - 8 : 56));
-
-                        // Buffer canvas width in 128px chunks so GPU surface texture is NOT reallocated on every pixel
-                        const targetBufferW = Math.ceil((clientW + 64) / 128) * 128;
-                        if (!canvas._bufW || canvas._bufW < targetBufferW) {
-                            canvas._bufW = targetBufferW;
-                            canvas.width = Math.floor(targetBufferW * dpr);
-                            canvas.height = Math.floor(clientH * dpr);
-                            canvas.style.width = `${targetBufferW}px`;
-                            canvas.style.height = `${clientH}px`;
-                        }
-
-                        const ctx = canvas.getContext('2d');
-                        if (ctx) {
-                            ctx.save();
-                            ctx.scale(dpr, dpr);
-                            ctx.clearRect(0, 0, (canvas._bufW || clientW) + 10, clientH);
-
-                            const barWidth = 2.0;
-                            const barGap = 1.0;
-                            const step = barWidth + barGap;
-                            const maxBars = Math.floor(clientW / step);
-
-                            if (maxBars > 0) {
-                                const midY = clientH / 2;
-                                const PEAK_BUCKET_SEC = 0.02;
-                                // Sleek monochrome high-contrast bars matching dark cinematic aesthetic rule
-                                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-                                ctx.beginPath();
-                                for (let b = 0; b < maxBars; b++) {
-                                    // Fixed timeline coordinate: bar b always corresponds to fixed time (b * step) / zoom
-                                    const barTime = (b * step) / (daw.zoom || 15);
-                                    const bIdx = Math.floor(barTime / PEAK_BUCKET_SEC);
-                                    const rawVal = (daw._liveRecPeaks && daw._liveRecPeaks[bIdx] !== undefined)
-                                        ? daw._liveRecPeaks[bIdx]
-                                        : (b === maxBars - 1 ? liveMicPeak : 0.08);
-                                    const pVal = Math.max(0.08, Math.min(1.0, rawVal));
-                                    const barH = Math.max(4, pVal * (clientH - 12));
-                                    const bx = b * step;
-                                    const by = midY - barH / 2;
-                                    ctx.rect(bx, by, barWidth, barH);
-                                }
-                                ctx.fill();
-                            }
-                            ctx.restore();
-                        }
-                    }
-                }
-
-                if (daw.isRecording) {
-                    if (daw.playhead >= daw.duration - 2) {
-                        daw.duration = Math.max(daw.duration + 30, Math.ceil(daw.playhead + 30));
-                        renderDawRuler();
-                    }
-                } else if (hasActivePunch && daw.playhead >= daw.punch.outTime) {
-                    if (daw.isLooping) {
-                        stopDawPlayback(false);
-                        daw.playhead = daw.punch.inTime;
-                        updateDawPlayhead();
-                        startDawPlayback();
-                        return;
-                    } else {
-                        stopDawPlayback();
-                        daw.playhead = daw.punch.outTime;
-                        updateDawPlayhead();
-                        return;
-                    }
-                } else if (daw.playhead >= daw.duration) {
-                    if (daw.isLooping) {
-                        stopDawPlayback(false);
-                        daw.playhead = 0;
-                        updateDawPlayhead();
-                        startDawPlayback();
-                        return;
-                    } else {
-                        stopDawPlayback();
-                        daw.playhead = daw.duration;
-                        updateDawPlayhead();
-                        return;
-                    }
-                }
-                updateDawPlayhead();
-
-                // Synthesize Audible Metronome Ticks if enabled (BPM tempo based)
-                if (daw.isMetronomeEnabled) {
-                    const beatInterval = 60 / (daw.bpm || 120);
-                    const currentBeatIndex = Math.floor(daw.playhead / beatInterval);
-                    if (currentBeatIndex !== daw._lastMetronomeBeat && currentBeatIndex >= 0) {
-                        daw._lastMetronomeBeat = currentBeatIndex;
-                        const isDownbeat = (currentBeatIndex % 4) === 0;
-                        playMetronomeClick(isDownbeat);
-                    }
-                }
-
-                // Sample Master Output Stereo Peak VU Meter, Live Mic Recording & LUFS Loudness
-                if (daw.masterAnalyser || (daw.isRecording && daw._liveRecAnalyser)) {
-                    let peak = 0;
-                    let sumSquare = 0;
-                    let totalSamples = 0;
-                    let primaryData = null;
-
-                    if (daw.masterAnalyser) {
-                        const data = new Uint8Array(daw.masterAnalyser.frequencyBinCount);
-                        daw.masterAnalyser.getByteTimeDomainData(data);
-                        for (let i = 0; i < data.length; i++) {
-                            const dev = (data[i] - 128) / 128;
-                            const absDev = Math.abs(dev);
-                            if (absDev > peak) peak = absDev;
-                            sumSquare += dev * dev;
-                        }
-                        totalSamples += data.length;
-                        primaryData = data;
-                    }
-
-                    // Incorporate single-sampled live mic reading into Master VU when recording
-                    if (daw.isRecording && daw._liveRecAnalyser && liveMicData) {
-                        if (liveMicPeak > peak) peak = liveMicPeak;
-                        for (let i = 0; i < liveMicData.length; i++) {
-                            const dev = (liveMicData[i] - 128) / 128;
-                            sumSquare += dev * dev;
-                        }
-                        totalSamples += liveMicData.length;
-                        if (!primaryData) primaryData = liveMicData;
-                    }
-
-                    const vuBar = document.getElementById('daw-master-vu-bar');
-                    const vuDb = document.getElementById('daw-master-vu-db');
-                    const lufsBadge = document.getElementById('daw-master-lufs-badge');
-
-                    if (vuBar) vuBar.style.width = `${Math.min(100, Math.round(peak * 100))}%`;
-                    const dbStr = peak > 0.001 ? (20 * Math.log10(peak)).toFixed(1) : '-inf';
-                    if (vuDb) {
-                        vuDb.textContent = dbStr === '-inf' ? '-∞ dB' : `${dbStr} dB`;
-                    }
-
-                    // Animate Standalone / Docked Studio Master VU Window (Dual Bars L/R & Clip)
-                    const vuBarL = document.getElementById('daw-vu-bar-l');
-                    const vuBarR = document.getElementById('daw-vu-bar-r');
-                    const vuDbL = document.getElementById('daw-vu-db-l');
-                    const vuDbR = document.getElementById('daw-vu-db-r');
-                    const vuClip = document.getElementById('daw-vu-clip-badge');
-                    const vuWindowLufs = document.getElementById('daw-vu-lufs-window-badge');
-
-                    if (vuBarL) vuBarL.style.height = `${Math.min(100, Math.round(peak * 100))}%`;
-                    const deckMasterVuL = document.getElementById('daw-deck-mixer-master-vu-l');
-                    if (deckMasterVuL) deckMasterVuL.style.height = `${Math.min(100, Math.round(peak * 100))}%`;
-                    const peakR = Math.max(0, Math.min(1.0, peak * (0.96 + (((primaryData ? primaryData[0] : 128)) % 7) * 0.01)));
-                    if (vuBarR) {
-                        vuBarR.style.height = `${Math.min(100, Math.round(peakR * 100))}%`;
-                    }
-                    const deckMasterVuR = document.getElementById('daw-deck-mixer-master-vu-r');
-                    if (deckMasterVuR) deckMasterVuR.style.height = `${Math.min(100, Math.round(peakR * 100))}%`;
-                    if (vuDbL) vuDbL.textContent = dbStr === '-inf' ? '-∞' : `${dbStr}dB`;
-                    if (vuDbR) vuDbR.textContent = dbStr === '-inf' ? '-∞' : `${dbStr}dB`;
-                    if (vuClip) {
-                        vuClip.style.opacity = peak >= 0.98 ? '1' : '0';
-                    }
-
-                    if (lufsBadge && totalSamples > 0) {
-                        const rms = Math.sqrt(sumSquare / totalSamples);
-                        // EBU R128 / ITU-R BS.1770 approximation: LUFS ~= 20*log10(RMS) - 0.69
-                        if (rms > 0.0005) {
-                            const lufs = (20 * Math.log10(rms) - 0.69).toFixed(1);
-                            daw.masterLufs = parseFloat(lufs);
-                            lufsBadge.textContent = `${lufs} LUFS`;
-                            if (vuWindowLufs) vuWindowLufs.textContent = `${lufs} LUFS`;
-                            if (lufs > -14.0) {
-                                lufsBadge.style.color = '#f87171'; // Too loud for podcast standard (-14 / -16 LUFS)
-                                if (vuWindowLufs) vuWindowLufs.style.color = '#f87171';
-                            } else if (lufs >= -18.0) {
-                                lufsBadge.style.color = '#34d399'; // Optimal broadcast target range
-                                if (vuWindowLufs) vuWindowLufs.style.color = '#34d399';
-                            } else {
-                                lufsBadge.style.color = '#0a84ff'; // Quiet speech/ambient
-                                if (vuWindowLufs) vuWindowLufs.style.color = '#0a84ff';
-                            }
-
-                            // Loudness Target compliance calculation
-                            const targetBadge = document.getElementById('daw-vu-target-compliance-badge');
-                            if (targetBadge && _activeVuTarget !== 'off') {
-                                const targetVal = _activeVuTarget === 'stream' ? -14.0 : -24.0;
-                                const diff = parseFloat(lufs) - targetVal;
-                                if (Math.abs(diff) <= 1.0) {
-                                    targetBadge.textContent = 'ON TARGET';
-                                    targetBadge.style.color = '#34d399';
-                                } else if (diff > 1.0) {
-                                    targetBadge.textContent = `+${diff.toFixed(1)} HOT`;
-                                    targetBadge.style.color = '#ff9f0a';
-                                } else {
-                                    targetBadge.textContent = `${diff.toFixed(1)} LOW`;
-                                    targetBadge.style.color = '#0a84ff';
-                                }
-                            }
-                        } else {
-                            lufsBadge.textContent = '-∞ LUFS';
-                            lufsBadge.style.color = '#0a84ff';
-                            if (vuWindowLufs) {
-                                vuWindowLufs.textContent = '-∞ LUFS';
-                                vuWindowLufs.style.color = '#0a84ff';
-                            }
-                            const targetBadge = document.getElementById('daw-vu-target-compliance-badge');
-                            if (targetBadge && _activeVuTarget !== 'off') {
-                                targetBadge.textContent = 'SILENT';
-                                targetBadge.style.color = 'rgba(255,255,255,0.4)';
-                            }
-                        }
-                    }
-
-                    // Animate Individual Track Header Mini VU Level Meters
-                    const trackKeys = Object.keys(daw.tracks);
-                    trackKeys.forEach(tKey => {
-                        const trackObj = daw.tracks[tKey];
-                        const miniVuFill = document.getElementById(`track-mini-vu-fill-${tKey}`);
-                        const deckMixerVu = document.getElementById(`daw-mixer-vu-${tKey}`);
-                        if (!miniVuFill && !deckMixerVu) return;
-
-                        if (trackObj.muted) {
-                            if (miniVuFill) miniVuFill.style.height = '0%';
-                            if (deckMixerVu) deckMixerVu.style.height = '0%';
-                            return;
-                        }
-
-                        let tPeak = 0;
-                        if (daw.isRecording && (daw._recordTrackId === tKey || dawRecordingTargetTrackId === tKey) && daw._liveRecAnalyser) {
-                            tPeak = liveMicPeak;
-                        } else {
-                            const bus = daw.trackBuses && daw.trackBuses[tKey];
-                            if (bus && bus.analyser && bus.data) {
-                                bus.analyser.getByteTimeDomainData(bus.data);
-                                for (let bi = 0; bi < bus.data.length; bi++) {
-                                    const bDev = Math.abs((bus.data[bi] - 128) / 128);
-                                    if (bDev > tPeak) tPeak = bDev;
-                                }
-                            }
-                        }
-
-                        const pct = Math.min(100, Math.round(tPeak * 100));
-                        if (miniVuFill) miniVuFill.style.height = `${pct}%`;
-                        if (deckMixerVu) deckMixerVu.style.height = `${pct}%`;
-                    });
-
-                    // Live Telemetry Sync to Docked Bottom Studio Deck
-                    const deckEl = document.getElementById('daw-bottom-studio-deck');
-                    if (deckEl && !deckEl.classList.contains('collapsed')) {
-                        const activeId = daw._activeFxTrackId || (daw.tracks && Object.keys(daw.tracks)[0]) || 'host';
-                        const activeBus = daw.trackBuses && daw.trackBuses[activeId];
-                        const activeTrack = daw.tracks && daw.tracks[activeId];
-                        if (activeBus) {
-                            const compNode = activeBus.fx?.compNode;
-                            let grDb = 0;
-                            if (compNode) {
-                                const redVal = typeof compNode.reduction === 'number' ? compNode.reduction : (compNode.reduction?.value || 0);
-                                grDb = Math.abs(redVal);
-                            }
-                            const deckGrFill = document.getElementById('daw-deck-comp-gr-fill');
-                            const deckGrVal = document.getElementById('daw-deck-comp-gr-val');
-                            if (deckGrFill && deckGrVal) {
-                                if (grDb > 0.05) {
-                                    deckGrFill.style.width = `${Math.min(100, (grDb / 18) * 100)}%`;
-                                    deckGrVal.textContent = `-${grDb.toFixed(1)} dB`;
-                                } else {
-                                    deckGrFill.style.width = '0%';
-                                    deckGrVal.textContent = '0.0 dB';
-                                }
-                            }
-
-                            if (window._renderDeckEqCanvas && activeBus.analyser) {
-                                window._renderDeckEqCanvas(activeTrack?.plugins, activeBus.analyser);
-                            }
-
-                            if (window._renderDeckCompCanvas) {
-                                let trackPeakVal = 0;
-                                if (activeBus.data) {
-                                    for (let bi = 0; bi < activeBus.data.length; bi++) {
-                                        const dev = Math.abs((activeBus.data[bi] - 128) / 128);
-                                        if (dev > trackPeakVal) trackPeakVal = dev;
-                                    }
-                                }
-                                const devDb = trackPeakVal > 0.0001 ? 20 * Math.log10(trackPeakVal) : -100;
-                                window._renderDeckCompCanvas(activeTrack?.plugins, devDb, grDb);
-                            }
-                        }
-                    }
-
-                    // Real-Time Track DSP FX Rack Updates during timeline playback
-                    const fxModal = document.getElementById('daw-track-fx-modal');
-                    if (fxModal && fxModal.style.display !== 'none' && daw._activeFxTrackId) {
-                        const activeBus = daw.trackBuses && daw.trackBuses[daw._activeFxTrackId];
-                        if (activeBus) {
-                            // Compressor GR meter
-                            const compNode = activeBus.fx?.compNode;
-                            const grFill = document.getElementById('daw-fx-comp-gr-fill');
-                            const grValEl = document.getElementById('daw-fx-comp-gr-val');
-                            if (grFill && grValEl) {
-                                let grDb = 0;
-                                if (compNode && document.getElementById('daw-fx-comp-enable')?.checked) {
-                                    const redVal = typeof compNode.reduction === 'number' ? compNode.reduction : (compNode.reduction?.value || 0);
-                                    grDb = Math.abs(redVal);
-                                }
-                                if (grDb > 0.05) {
-                                    grFill.style.width = `${Math.min(100, (grDb / 18) * 100)}%`;
-                                    grValEl.textContent = `-${grDb.toFixed(1)} dB`;
-                                } else {
-                                    grFill.style.width = '0%';
-                                    grValEl.textContent = '0.0 dB';
-                                }
-                            }
-
-                            // Gate Status Pill
-                            const gatePill = document.getElementById('daw-fx-gate-status-pill');
-                            if (gatePill) {
-                                const isGateOn = !!document.getElementById('daw-fx-gate-enable')?.checked;
-                                const gThresh = parseFloat(document.getElementById('daw-fx-gate-thresh')?.value || -42);
-                                if (!isGateOn) {
-                                    gatePill.textContent = 'BYPASS';
-                                    gatePill.style.color = 'rgba(255,255,255,0.4)';
-                                    gatePill.style.background = 'rgba(255,255,255,0.06)';
-                                    gatePill.style.borderColor = 'rgba(255,255,255,0.1)';
-                                } else {
-                                    let trackPeak = 0;
-                                    if (activeBus.data) {
-                                        for (let bi = 0; bi < activeBus.data.length; bi++) {
-                                            const dev = Math.abs((activeBus.data[bi] - 128) / 128);
-                                            if (dev > trackPeak) trackPeak = dev;
-                                        }
-                                    }
-                                    const peakDb = trackPeak > 0.0001 ? 20 * Math.log10(trackPeak) : -100;
-                                    if (peakDb < gThresh) {
-                                        gatePill.textContent = 'DUCKED';
-                                        gatePill.style.color = '#ff9f0a';
-                                        gatePill.style.background = 'rgba(255, 159, 10,0.18)';
-                                        gatePill.style.borderColor = 'rgba(255, 159, 10,0.4)';
-                                    } else {
-                                        gatePill.textContent = 'OPEN';
-                                        gatePill.style.color = '#30d158';
-                                        gatePill.style.background = 'rgba(48, 209, 88,0.18)';
-                                        gatePill.style.borderColor = 'rgba(48, 209, 88,0.4)';
-                                    }
-                                }
-                            }
-
-                            // Live EQ Spectrum Canvas & Telemetry Diagnostics
-                            if (activeBus.analyser) {
-                                renderEqCurveCanvas(activeBus.analyser);
-                                checkAndRenderFxTelemetry(activeBus.analyser, compNode);
-                            }
-                        }
-                    }
-                }
-
-                // Deck Clip Inspector Playhead Scrub Sync
-                if (window._syncDeckClipScrub) {
-                    window._syncDeckClipScrub(daw.playhead);
-                }
-
-                // Auto-scroll timeline viewport smoothly to follow playhead in real-time without layout reflows
-                const viewport = document.getElementById('timeline-scroll-viewport');
-                if (viewport) {
-                    const playheadPx = daw.playhead * daw.zoom;
-                    const vpClientW = viewport._cachedWidth || viewport.clientWidth;
-                    if (!viewport._cachedWidth) viewport._cachedWidth = vpClientW;
-
-                    const leadMargin = daw.isRecording
-                        ? Math.min(220, vpClientW * 0.35)
-                        : Math.min(300, vpClientW * 0.45);
-                    const scrollTrigger = viewport.scrollLeft + vpClientW - leadMargin;
-                    if (playheadPx > scrollTrigger) {
-                        viewport.scrollLeft = playheadPx - (vpClientW - leadMargin);
-                    } else if (playheadPx < viewport.scrollLeft) {
-                        viewport.scrollLeft = Math.max(0, playheadPx - 60);
-                    }
-                }
-            } catch (tickErr) {
-                console.error('[DAW Playback] Error inside tick:', tickErr);
-            }
-
-            daw.animId = requestAnimationFrame(tick);
-        };
-        daw.animId = requestAnimationFrame(tick);
+        startDawEngineTicker();
     };
 
     const toggleDawPlay = () => {
@@ -8386,13 +8422,6 @@ export async function initStandaloneDaw() {
             startDawPlayback();
         }
     };
-
-    let dawMediaRecorder = null;
-    let dawRecordingStream = null;
-    let dawRecordingChunks = [];
-    let dawRecordingStartTime = 0;
-    let dawRecordingTargetTrackId = 'host';
-    let dawRecordingClipEl = null;
 
     // Helper to get or reuse active microphone stream across recording takes
     const getOrCreateDawMicStream = async (requestedDeviceId) => {
@@ -8838,9 +8867,27 @@ export async function initStandaloneDaw() {
 
         dawMediaRecorder.start(100);
 
-        // Start real-time playback simultaneously so user can overdub against other tracks
-        if (!daw.isPlaying) {
-            await startDawPlayback();
+        // Immediately start engine ticker so playhead advances, clip grows, and waveform animates without waiting
+        startDawEngineTicker();
+
+        // Update Play button to show timeline is active
+        const playBtn = document.getElementById('timeline-play-btn');
+        if (playBtn) {
+            playBtn.style.background = 'linear-gradient(135deg, #30d158 0%, #059669 100%)';
+            playBtn.style.border = '1px solid rgba(52, 211, 153, 0.85)';
+            playBtn.style.color = '#021a10';
+            playBtn.style.boxShadow = '0 0 16px rgba(48, 209, 88, 0.5)';
+        }
+        const playBtnText = document.getElementById('timeline-play-btn-text');
+        if (playBtnText) playBtnText.textContent = 'PAUSE';
+        const playBtnIcon = document.getElementById('timeline-play-btn-icon');
+        if (playBtnIcon) playBtnIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+
+        // Overdub backing tracks simultaneously if any clips exist on timeline
+        if (daw.clips && daw.clips.length > 0 && !daw.isPlaying) {
+            startDawPlayback().catch(err => {
+                console.warn('[DAW Overdub] Playback start notice:', err);
+            });
         }
     };
 
@@ -8872,6 +8919,20 @@ export async function initStandaloneDaw() {
 
         if (daw.isPlaying) {
             stopDawPlayback(false);
+        } else {
+            stopDawEngineTicker();
+            setStudioStatus('Ready', 'ready', false);
+            const playBtn = document.getElementById('timeline-play-btn');
+            if (playBtn) {
+                playBtn.style.background = 'linear-gradient(135deg, rgba(48, 209, 88, 0.22) 0%, rgba(5, 150, 105, 0.16) 100%)';
+                playBtn.style.border = '1px solid rgba(52, 211, 153, 0.55)';
+                playBtn.style.color = '#34d399';
+                playBtn.style.boxShadow = '0 0 10px rgba(48, 209, 88, 0.2)';
+            }
+            const playBtnText = document.getElementById('timeline-play-btn-text');
+            if (playBtnText) playBtnText.textContent = 'PLAY';
+            const playBtnIcon = document.getElementById('timeline-play-btn-icon');
+            if (playBtnIcon) playBtnIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
         }
     };
 
@@ -15023,6 +15084,12 @@ export async function initStandaloneDaw() {
         updateDawPlayhead();
         bindFooterControls();
         updateDawFooter();
+        await initDawMicSetup();
+        if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+            navigator.mediaDevices.addEventListener('devicechange', () => {
+                initDawMicSetup();
+            });
+        }
     })();
     
     // Global Window-Level & Timeline Drag & Drop Ingestion

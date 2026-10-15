@@ -1,6 +1,6 @@
 {
   "name": "localdaw",
-  "version": "1.8.35",
+  "version": "1.8.36",
   "description": "LocalFilm Multi-Track Studio Digital Audio Workstation (Cloudflare Edge Studio)",
   "type": "module",
   "scripts": {
