@@ -18483,20 +18483,21 @@ export async function initStandaloneDaw() {
     // ═════════════════════════════════════════════════════════════════════════════
     // LOCALSYNTH / EXTERNAL STEM IMPORT ENGINE
     // ═════════════════════════════════════════════════════════════════════════════
-    const checkExternalSynthImport = async () => {
+    let _importedSynthHashes = new Set();
+    const importSynthPayload = async (payload) => {
         try {
-            const rawData = localStorage.getItem('localsynth_export_payload');
-            if (!rawData) return;
-            localStorage.removeItem('localsynth_export_payload');
-
-            const payload = JSON.parse(rawData);
             if (!payload || !payload.audioBase64) return;
+            const payloadKey = `${payload.name}_${payload.bpm}_${payload.audioBase64.length}`;
+            if (_importedSynthHashes.has(payloadKey)) return;
+            _importedSynthHashes.add(payloadKey);
 
             setStudioStatus('Importing LocalSynth Track...', 'busy', true);
             if (!daw.audioCtx) {
                 daw.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
-            if (daw.audioCtx.state === 'suspended') await daw.audioCtx.resume();
+            if (daw.audioCtx.state === 'suspended') {
+                try { await daw.audioCtx.resume(); } catch (e) {}
+            }
 
             // Decode base64 audio
             const binaryStr = atob(payload.audioBase64);
@@ -18557,6 +18558,25 @@ export async function initStandaloneDaw() {
         } catch (e) {
             console.error('[LocalSynth Import Error]', e);
         }
+    };
+
+    const checkExternalSynthImport = async () => {
+        // 1. Check same-origin localStorage fallback
+        try {
+            const rawData = localStorage.getItem('localsynth_export_payload');
+            if (rawData) {
+                localStorage.removeItem('localsynth_export_payload');
+                const payload = JSON.parse(rawData);
+                await importSynthPayload(payload);
+            }
+        } catch (e) {}
+
+        // 2. Listen for cross-origin postMessage from LocalSynth window
+        window.addEventListener('message', async (event) => {
+            if (event.data && event.data.type === 'LOCALSYNTH_STEM_EXPORT') {
+                await importSynthPayload(event.data);
+            }
+        });
     };
 
     renderDawClips();
