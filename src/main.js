@@ -18480,6 +18480,85 @@ export async function initStandaloneDaw() {
         window.addEventListener('orientationchange', checkMobile);
     };
 
+    // ═════════════════════════════════════════════════════════════════════════════
+    // LOCALSYNTH / EXTERNAL STEM IMPORT ENGINE
+    // ═════════════════════════════════════════════════════════════════════════════
+    const checkExternalSynthImport = async () => {
+        try {
+            const rawData = localStorage.getItem('localsynth_export_payload');
+            if (!rawData) return;
+            localStorage.removeItem('localsynth_export_payload');
+
+            const payload = JSON.parse(rawData);
+            if (!payload || !payload.audioBase64) return;
+
+            setStudioStatus('Importing LocalSynth Track...', 'busy', true);
+            if (!daw.audioCtx) {
+                daw.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (daw.audioCtx.state === 'suspended') await daw.audioCtx.resume();
+
+            // Decode base64 audio
+            const binaryStr = atob(payload.audioBase64);
+            const bytes = new Uint8Array(binaryStr.length);
+            for (let i = 0; i < binaryStr.length; i++) {
+                bytes[i] = binaryStr.charCodeAt(i);
+            }
+            const decodedBuf = await daw.audioCtx.decodeAudioData(bytes.buffer);
+
+            // Sync BPM if present
+            if (payload.bpm) {
+                daw.bpm = parseInt(payload.bpm, 10) || 128;
+                const bpmInput = document.getElementById('daw-bpm-input');
+                if (bpmInput) bpmInput.value = daw.bpm;
+            }
+
+            const trackId = `track-localsynth-${Date.now()}`;
+            const trackName = payload.name || 'LocalSynth Master';
+
+            daw.tracks[trackId] = {
+                id: trackId,
+                name: `🎹 ${trackName}`,
+                type: 'audio',
+                channels: decodedBuf.numberOfChannels > 1 ? 'stereo' : 'mono',
+                vol: 1.0,
+                pan: 0,
+                muted: false,
+                solo: false,
+                color: '#f97316',
+                showAutomation: false,
+                keyframes: [{ time: 0, val: 1.0 }],
+                plugins: defaultPluginState()
+            };
+
+            const clipId = `clip-synth-${Date.now()}`;
+            const clipDur = decodedBuf.duration;
+            const newClip = {
+                id: clipId,
+                trackId: trackId,
+                name: `${trackName} (${payload.patch || 'Synth'})`,
+                color: '#f97316',
+                startOffset: 0,
+                trimStart: 0,
+                trimEnd: clipDur,
+                duration: clipDur,
+                buffer: decodedBuf,
+                gain: 1.0,
+                fadeIn: 0.005,
+                fadeOut: 0.005
+            };
+
+            daw.clips.push(newClip);
+            recomputeDawDuration();
+            renderDawTracks();
+            renderDawClips();
+            setStudioStatus('LocalSynth Track Imported!', 'ready');
+            showStudioToast(`🎹 Imported "${trackName}" (${clipDur.toFixed(1)}s) from LocalSynth!`);
+        } catch (e) {
+            console.error('[LocalSynth Import Error]', e);
+        }
+    };
+
     renderDawClips();
     updateDawPlayhead();
     bindFooterControls();
@@ -18488,5 +18567,6 @@ export async function initStandaloneDaw() {
     initTrackContextMenu();
     initDawFeedbackSystem();
     initMobileStudioEngine();
+    checkExternalSynthImport();
     showStudioToast('LocalDAW v1.8.42 Ready');
 }
